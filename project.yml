@@ -15,6 +15,18 @@ targets:
     platform: iOS
     sources:
       - path: App
+        excludes:
+          - OpenRouter.example.plist
+          - OpenRouter.plist
+    postCompileScripts:
+      - name: Copy OpenRouter key when present
+        basedOnDependencyAnalysis: false
+        script: |
+          key="${SRCROOT}/App/OpenRouter.plist"
+          dest="${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app"
+          if [ -f "$key" ]; then
+            cp "$key" "$dest/OpenRouter.plist"
+          fi
     dependencies:
       - package: VV00PCore
         product: VV00PCore

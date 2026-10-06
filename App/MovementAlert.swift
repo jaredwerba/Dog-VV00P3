@@ -14,8 +14,9 @@ final class MovementAlertCenter: NSObject, UNUserNotificationCenterDelegate {
 
     func notifyMoving() {
         let content = UNMutableNotificationContent()
-        content.title = Bulldog.dogName
-        content.body = "Max has been moving for more than 10 seconds."
+        let name = DogProfileStore.load().name
+        content.title = name
+        content.body = "\(name) has been moving for more than 10 seconds."
         content.sound = .default
         let request = UNNotificationRequest(
             identifier: "max-moving-\(UUID().uuidString)",

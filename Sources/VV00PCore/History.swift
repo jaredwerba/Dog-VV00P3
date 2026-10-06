@@ -213,6 +213,30 @@ public final class HistoryStore {
         )
     }
 
+    public func timeline(from: Int, until: Int) throws -> [StoredSecond] {
+        let sql = """
+        SELECT motion, peaks, distance FROM seconds
+        WHERE second >= \(from) AND second < \(until)
+        ORDER BY second
+        """
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
+            throw HistoryError.query(message(db))
+        }
+        defer { sqlite3_finalize(statement) }
+        var seconds: [StoredSecond] = []
+        while sqlite3_step(statement) == SQLITE_ROW {
+            guard let text = sqlite3_column_text(statement, 0) else { continue }
+            guard let motion = DogMotion.stored(String(cString: text)) else { continue }
+            seconds.append(StoredSecond(
+                motion: motion,
+                peaks: Int(sqlite3_column_int(statement, 1)),
+                distance: sqlite3_column_double(statement, 2)
+            ))
+        }
+        return seconds
+    }
+
     public func totals(from: Int, until: Int) throws -> PeriodTotals {
         let sql = """
         SELECT motion, COUNT(*), COALESCE(SUM(distance), 0), COALESCE(SUM(peaks), 0)

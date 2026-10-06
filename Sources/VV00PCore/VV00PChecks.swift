@@ -38,6 +38,52 @@ public enum VV00PChecks {
         expect(bout.observe(motion: .moving, live: false) == false, "stored motion alerted")
         expect(bout.streak == 0, "stored motion left the streak at \(bout.streak)")
         expect(Bulldog.dailyMovingSeconds == 1_800, "daily moving goal was \(Bulldog.dailyMovingSeconds) seconds")
+        expect(Bulldog.dailyRestingSeconds == 12 * 60 * 60, "sleep goal was \(Bulldog.dailyRestingSeconds) seconds")
+        expect(DayBrief.minimumMiles == 3, "daily miles were \(DayBrief.minimumMiles)")
+        expect(DayBrief.pantry.contains("yellowfin tuna"), "pantry dropped yellowfin tuna")
+        let sampleToday = PeriodTotals(resting: 53 * 60, moving: 24, distance: 69.7, peaks: 80)
+        let sampleWeek = PeriodTotals(resting: 53 * 60, moving: 24, distance: 69.7, peaks: 80)
+        let prompt = DayBrief.userPrompt(
+            profile: .starter,
+            today: sampleToday,
+            week: sampleWeek,
+            dayLabel: "Today",
+            kind: .record,
+            strain: 4.2,
+            averageSpeed: "0.83 m/s"
+        )
+        expect(prompt.contains("3.00 mi"), "prompt missed the 3 mile minimum: \(prompt)")
+        expect(prompt.contains("English Bulldog"), "prompt missed the breed")
+        expect(prompt.contains("55 lb"), "prompt missed the weight")
+        expect(prompt.contains("yellowfin tuna"), "prompt missed the pantry")
+        expect(prompt.contains("Strain: 4.2"), "prompt missed the strain number: \(prompt)")
+        expect(!prompt.contains("recovery"), "prompt invented a recovery score")
+        expect(DayBrief.systemPrompt(for: .forecast).contains("tomorrow"), "forecast prompt missed tomorrow")
+        let easy = StrainModel.score(Array(repeating: StoredSecond(motion: .moving, peaks: 1, distance: 0.83), count: 1_800))
+        expect(easy.strain > 9.5 && easy.strain < 10.5, "easy half hour strain was \(easy.strain)")
+        expect(abs(easy.averageMetersPerSecond - 0.83) < 0.001, "easy speed was \(easy.averageMetersPerSecond)")
+        let slowMile = StrainModel.score(Array(repeating: StoredSecond(motion: .moving, peaks: 1, distance: 0.83), count: 300))
+        let fastMile = StrainModel.score(Array(repeating: StoredSecond(motion: .moving, peaks: 3, distance: 2.49), count: 100))
+        expect(abs(slowMile.averageMetersPerSecond * 300 - 249) < 0.01, "slow mile distance drifted")
+        expect(abs(fastMile.averageMetersPerSecond * 100 - 249) < 0.01, "fast mile distance drifted")
+        expect(fastMile.strain > slowMile.strain, "a fast mile scored \(fastMile.strain) against a slow mile \(slowMile.strain)")
+        let steady = StrainModel.score(Array(repeating: StoredSecond(motion: .moving, peaks: 2, distance: 1.6), count: 10))
+        var chase: [StoredSecond] = []
+        for _ in 0..<2 {
+            chase.append(contentsOf: Array(repeating: StoredSecond(motion: .moving, peaks: 2, distance: 1.6), count: 5))
+            chase.append(StoredSecond(motion: .resting, peaks: 0, distance: 0))
+        }
+        let stops = StrainModel.score(chase)
+        expect(stops.starts == 2, "chase starts were \(stops.starts)")
+        expect(stops.strain > steady.strain, "stop and go scored \(stops.strain) against steady \(steady.strain)")
+        expect(StrainModel.score([StoredSecond(motion: .resting, peaks: 0, distance: 0)]).strain == 0, "rest scored strain")
+        let parsed = DayBrief.parse("""
+        Sure.
+        {\"summary\":\"He has 0.04 miles today.\",\"dinnerName\":\"Beef and pumpkin\",\"ingredients\":[\"4 oz ground beef\",\"2 oz pumpkin\"],\"steps\":[\"Cook the beef.\",\"Stir in the pumpkin.\"]}
+        """)
+        expect(parsed?.dinnerName == "Beef and pumpkin", "dinner name was \(String(describing: parsed?.dinnerName))")
+        expect(parsed?.ingredients.count == 2, "ingredients were \(String(describing: parsed?.ingredients))")
+        expect(DayBrief.parse("not json") == nil, "garbage parsed as a note")
 
         let still = hold(PaceModel(), dynamicG: 0, from: 0, until: 1)
         expect(still.motion == .resting, "still was \(still.motion)")
@@ -94,6 +140,10 @@ public enum VV00PChecks {
             )
             expect(week.count == 7, "week chart had \(week.count) days")
             expect(week.contains { abs($0.totals.distance - 3.32) < 0.001 }, "week chart dropped the saved day")
+            let line = try store.timeline(from: 1_700_000_000, until: 1_700_000_200)
+            expect(line.count == 2, "timeline had \(line.count) seconds")
+            expect(line.first?.peaks == 4, "timeline dropped the replaced peaks")
+            expect(line.last?.motion == .resting, "timeline order was \(String(describing: line.last?.motion))")
 
             let legacyURL = FileManager.default.temporaryDirectory.appendingPathComponent("vv00p-legacy-\(UUID().uuidString).sqlite")
             defer { try? FileManager.default.removeItem(at: legacyURL) }

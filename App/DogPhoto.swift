@@ -51,7 +51,17 @@ enum DogPhotoImage {
     }
 }
 
-struct DogPhotoPicker: View {
+struct DogPhotoPicker<Middle: View>: View {
+    var profile: DogProfile
+    var sleep: Double
+    var movement: Double
+    var strain: Double
+    var sleepValue: String
+    var movementValue: String
+    var strainValue: String
+    var velocity: String
+    @ViewBuilder var middle: () -> Middle
+
     @State private var photoData: Data?
     @State private var photoItem: PhotosPickerItem?
     @State private var showPicker = false
@@ -65,15 +75,15 @@ struct DogPhotoPicker: View {
                 portrait
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(photoData == nil ? "Add a photo of Max" : "Photo of Max Werba")
+            .accessibilityLabel(photoData == nil ? "Add a photo of \(profile.name)" : "Photo of \(profile.name)")
             .accessibilityHint(photoData == nil ? "Shows the add photo button" : "Shows the change photo button")
 
             VStack(spacing: 2) {
-                Text(Bulldog.dogName)
+                Text(profile.name)
                     .military(28, bold: true)
-                Text(Bulldog.name)
+                Text(profile.breed)
                     .military(15, bold: true)
-                Text("\(Bulldog.sex) · \(Bulldog.ageYears) years old · \(Bulldog.weightPounds) lb")
+                Text("\(Bulldog.sex) · \(profile.ageYears) years old · \(profile.weightPounds) lb")
                     .military(13)
                     .foregroundStyle(.secondary)
             }
@@ -87,6 +97,18 @@ struct DogPhotoPicker: View {
                 .military(15, bold: true)
                 .photosPicker(isPresented: $showPicker, selection: $photoItem, matching: .images)
             }
+
+            middle()
+
+            HStack(alignment: .top, spacing: 10) {
+                metricRing("Sleep", sleepValue, "of \(Bulldog.dailyRestingHours)h", sleep, Color(red: 0.36, green: 0.72, blue: 0.98))
+                metricRing("Movement", movementValue, "of 30m", movement, Color(red: 0.20, green: 0.84, blue: 0.38))
+                metricRing("Strain", strainValue, "of 21", strain, Color(red: 0.98, green: 0.27, blue: 0.35))
+            }
+            Text(velocity)
+                .military(13)
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
         }
         .frame(maxWidth: .infinity)
         .onAppear {
@@ -101,6 +123,36 @@ struct DogPhotoPicker: View {
                 showChange = false
             }
         }
+    }
+
+    private func metricRing(_ title: String, _ value: String, _ caption: String, _ progress: Double, _ tint: Color) -> some View {
+        VStack(spacing: 8) {
+            ZStack {
+                Circle()
+                    .stroke(tint.opacity(0.22), lineWidth: 9)
+                Circle()
+                    .trim(from: 0, to: CGFloat(min(1, max(0, progress))))
+                    .stroke(tint, style: StrokeStyle(lineWidth: 9, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                Text(value)
+                    .military(15, bold: true)
+                    .monospacedDigit()
+                    .minimumScaleFactor(0.4)
+                    .lineLimit(1)
+                    .padding(.horizontal, 8)
+            }
+            .frame(maxWidth: .infinity)
+            .aspectRatio(1, contentMode: .fit)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(title), \(value), \(caption)")
+            Text(title)
+                .military(12, bold: true)
+                .foregroundStyle(tint)
+            Text(caption)
+                .military(11)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private var portrait: some View {

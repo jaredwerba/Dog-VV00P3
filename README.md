@@ -2,7 +2,11 @@
 
 iPhone movement diary for one English bulldog and one WHOOP 5.0 MG strap. The phone keeps distance, resting, and moving. The strap stays on the dog. There is no WHOOP account and no cloud sync.
 
-Today shows three rings: distance out of 1 mile, resting as a share of recorded time, and moving out of a 30-minute day. The card under the rings is today's walking still left, plus this week's saved totals.
+Today shows three labeled circles: Sleep out of 12 hours of resting, Movement out of 30 minutes, and Strain out of 21. The number sits inside each circle and the name sits under it. Max's photo is a separate circle above his name.
+
+<< and >> step through days. Tomorrow is a written exercise goal from today's totals. Pull to refresh reloads the day. Settings hold his name, breed, age, weight, and stride.
+
+A daily note and one dinner stay closed until they are tapped. They are written when `App/OpenRouter.plist` is on the phone. That file is not in git. `App/OpenRouter.example.plist` shows the shape.
 
 Open `VV00P.xcodeproj` in Xcode. The app target is VV00P, bundle id `com.jaredwerba.vv00p`.
 

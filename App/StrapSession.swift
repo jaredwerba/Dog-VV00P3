@@ -20,6 +20,9 @@ final class StrapSession: ObservableObject {
     @Published var period = PeriodTotals()
     @Published var todayTotals = PeriodTotals()
     @Published var weekTotals = PeriodTotals()
+    @Published var dayOffset = 0
+    @Published var profile = DogProfile.starter
+    @Published var strain = StrainScore.quiet
     @Published var rows: [HistoryRow] = []
     @Published var chartDays: [HistoryRow] = []
     @Published var dayParts: [DayPartSummary] = DayPart.allCases.map {
@@ -62,8 +65,44 @@ final class StrapSession: ObservableObject {
                 metersPerPeak = stored
             }
         }
+        profile = DogProfileStore.load(defaults: defaults)
         model.config = currentConfig()
         reloadHistory()
+    }
+
+    var anchorDate: Date {
+        Calendar.current.date(byAdding: .day, value: dayOffset, to: Date()) ?? Date()
+    }
+
+    func shiftDay(by delta: Int) {
+        let next = min(1, dayOffset + delta)
+        guard next != dayOffset else { return }
+        dayOffset = next
+        reloadHistory()
+    }
+
+    func setProfile(_ profile: DogProfile) {
+        let clean = profile.cleaned()
+        self.profile = clean
+        DogProfileStore.save(clean, defaults: defaults)
+    }
+
+    /// Tomorrow's note is a prediction from the real today. Other days use themselves.
+    func noteSource() -> (day: PeriodTotals, week: PeriodTotals, strain: StrainScore) {
+        guard dayOffset > 0 else { return (todayTotals, weekTotals, strain) }
+        let today = Date()
+        return (
+            totals(for: .day, containing: today),
+            totals(for: .week, containing: today),
+            strain(on: today)
+        )
+    }
+
+    private func strain(on date: Date) -> StrainScore {
+        let bounds = HistoryRange.day.bounds(containing: date)
+        let from = Int(bounds.start.timeIntervalSince1970.rounded(.down))
+        let until = Int(bounds.end.timeIntervalSince1970.rounded(.down))
+        return (try? store.timeline(from: from, until: until)).map(StrainModel.score) ?? .quiet
     }
 
     func setRange(_ range: HistoryRange) {
@@ -236,19 +275,24 @@ final class StrapSession: ObservableObject {
     }
 
     func reloadHistory() {
-        let bounds = range.bounds(containing: Date())
+        let anchor = anchorDate
+        let bounds = range.bounds(containing: anchor)
         let from = Int(bounds.start.timeIntervalSince1970.rounded(.down))
         let until = Int(bounds.end.timeIntervalSince1970.rounded(.down))
         savedPeriod = (try? store.totals(from: from, until: until)) ?? PeriodTotals()
-        todayTotals = totals(for: .day)
-        weekTotals = totals(for: .week)
-        rows = (try? store.rows(range: range, containing: Date())) ?? []
+        todayTotals = totals(for: .day, containing: anchor)
+        weekTotals = totals(for: .week, containing: anchor)
+        let dayBounds = HistoryRange.day.bounds(containing: anchor)
+        let dayFrom = Int(dayBounds.start.timeIntervalSince1970.rounded(.down))
+        let dayUntil = Int(dayBounds.end.timeIntervalSince1970.rounded(.down))
+        strain = (try? store.timeline(from: dayFrom, until: dayUntil)).map(StrainModel.score) ?? .quiet
+        rows = (try? store.rows(range: range, containing: anchor)) ?? []
         if range == .day {
             chartDays = []
         } else {
-            chartDays = (try? store.rows(range: range, containing: Date(), includeEmpty: true)) ?? []
+            chartDays = (try? store.rows(range: range, containing: anchor, includeEmpty: true)) ?? []
         }
-        dayParts = (try? store.dayParts(containing: Date())) ?? DayPart.allCases.map {
+        dayParts = (try? store.dayParts(containing: anchor)) ?? DayPart.allCases.map {
             DayPartSummary(part: $0, totals: PeriodTotals())
         }
         if let open = closer.flush() {
@@ -261,8 +305,8 @@ final class StrapSession: ObservableObject {
         publishPeriod()
     }
 
-    private func totals(for range: HistoryRange) -> PeriodTotals {
-        let bounds = range.bounds(containing: Date())
+    private func totals(for range: HistoryRange, containing date: Date) -> PeriodTotals {
+        let bounds = range.bounds(containing: date)
         let from = Int(bounds.start.timeIntervalSince1970.rounded(.down))
         let until = Int(bounds.end.timeIntervalSince1970.rounded(.down))
         return (try? store.totals(from: from, until: until)) ?? PeriodTotals()

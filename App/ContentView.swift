@@ -4,47 +4,79 @@ import VV00PCore
 struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var session = StrapSession()
-    @State private var showCalibration = false
+    @State private var showSettings = false
+    @State private var showTodayNote = false
+    @State private var showDinner = false
+    @State private var brief: DayBrief.Note?
+    @State private var briefNote = ""
+    @State private var briefLoading = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
-                    DogPhotoPicker()
-                    VStack(alignment: .leading, spacing: 28) {
-                        statusBlock
-                        metricRings
-                        healthCard
+                    DogPhotoPicker(
+                        profile: session.profile,
+                        sleep: sleepProgress,
+                        movement: movementProgress,
+                        strain: strainProgress,
+                        sleepValue: duration(session.todayTotals.resting),
+                        movementValue: duration(session.todayTotals.moving),
+                        strainValue: String(format: "%.1f", session.strain.strain),
+                        velocity: velocityText
+                    ) {
                         periodPicker
+                            .padding(.horizontal, 20)
+                    }
+                    VStack(alignment: .leading, spacing: 28) {
+                        healthCard
+                        dinnerCard
                         if session.range == .day {
                             dailyLog
                             historyList
                         } else {
                             AnalyticsView(range: session.range, days: session.chartDays, unit: session.unit)
                         }
-                        calibrateButton
-                        strideTuner
+                        statusBlock
+                        settingsButton
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 12)
                 }
             }
-            .navigationTitle(periodTitle)
+            .refreshable {
+                session.reloadHistory()
+                await refreshBrief(force: true)
+            }
+            .navigationTitle("")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
-            .sheet(isPresented: $showCalibration) {
-                CalibrationSheet(session: session)
+            .sheet(isPresented: $showSettings) {
+                DogSettingsSheet(session: session)
             }
             .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Picker("Distance", selection: unitBinding) {
-                        ForEach(DistanceUnit.allCases) { unit in
-                            Text(unit.title).tag(unit)
+                ToolbarItem(placement: .principal) {
+                    HStack(spacing: 14) {
+                        Button {
+                            session.shiftDay(by: -1)
+                        } label: {
+                            Text("<<")
+                                .military(17, bold: true)
                         }
+                        .accessibilityLabel("Earlier day")
+                        Text(dayTitle)
+                            .military(17, bold: true)
+                        Button {
+                            session.shiftDay(by: 1)
+                        } label: {
+                            Text(">>")
+                                .military(17, bold: true)
+                        }
+                        .disabled(session.dayOffset >= 1)
+                        .accessibilityLabel("Tomorrow")
                     }
-                    .pickerStyle(.menu)
-                    .accessibilityLabel("Distance unit")
+                    .buttonStyle(.plain)
                 }
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -66,6 +98,17 @@ struct ContentView: View {
             if ProcessInfo.processInfo.arguments.contains("--connect") {
                 session.connect()
             }
+            if !ProcessInfo.processInfo.arguments.contains("--screenshot") {
+                Task { await refreshBrief(force: false) }
+            }
+        }
+        .onChange(of: session.dayOffset) { _ in
+            showTodayNote = false
+            showDinner = false
+            brief = nil
+            briefNote = ""
+            guard !ProcessInfo.processInfo.arguments.contains("--screenshot") else { return }
+            Task { await refreshBrief(force: false) }
         }
         .onChange(of: scenePhase) { phase in
             if phase == .active {
@@ -77,33 +120,35 @@ struct ContentView: View {
     }
 
     private var statusBlock: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             Text(session.deviceName)
-                .military(20, bold: true)
+                .military(13, bold: true)
             Text(session.status)
+                .military(12)
                 .foregroundStyle(.secondary)
             if session.connected {
                 Text(session.motionLabel)
-                    .military(15, bold: true)
+                    .military(12, bold: true)
                     .foregroundStyle(motionColor)
             }
             if session.sampleCount > 0 {
                 Text("\(session.sampleCount) samples")
-                    .military(12)
+                    .military(11)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
             }
             if !session.motionNote.isEmpty {
                 Text(session.motionNote)
-                    .military(15)
+                    .military(12)
                     .foregroundStyle(.orange)
             }
         }
+        .multilineTextAlignment(.leading)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var periodPicker: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(spacing: 8) {
             Picker("Period", selection: rangeBinding) {
                 ForEach(HistoryRange.allCases) { range in
                     Text(range.title).tag(range)
@@ -111,46 +156,97 @@ struct ContentView: View {
             }
             .pickerStyle(.segmented)
             Text(periodTitle)
-                .military(15)
+                .military(13)
                 .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity)
         }
-    }
-
-    private var metricRings: some View {
-        HStack(alignment: .top, spacing: 10) {
-            MetricRing(
-                title: "Distance",
-                value: session.unit.text(meters: session.period.distance),
-                caption: "of 1 mi",
-                progress: min(1, session.period.distance / DistanceUnit.metersPerMile),
-                tint: Color(red: 0.45, green: 0.74, blue: 0.98)
-            )
-            MetricRing(
-                title: "Resting",
-                value: duration(session.period.resting),
-                caption: "of recorded",
-                progress: recordedShare(session.period.resting),
-                tint: .green
-            )
-            MetricRing(
-                title: "Moving",
-                value: duration(goalSeconds),
-                caption: "of 30m",
-                progress: min(1, Double(goalSeconds) / Double(Bulldog.dailyMovingSeconds)),
-                tint: .blue
-            )
-        }
-        .frame(maxWidth: .infinity)
     }
 
     private var healthCard: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(healthTitle)
-                .military(20, bold: true)
-            Text(healthBody)
-                .military(15)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+            Button {
+                showTodayNote.toggle()
+            } label: {
+                HStack(spacing: 8) {
+                    Text(healthTitle)
+                        .military(20, bold: true)
+                    Spacer(minLength: 8)
+                    Image(systemName: showTodayNote ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(healthTitle)
+            .accessibilityHint(showTodayNote ? "Hides the note" : "Shows the note")
+            if showTodayNote {
+                Text(brief?.summary ?? healthBody)
+                    .military(15)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if briefLoading, brief == nil {
+                    Text("Writing today's note.")
+                        .military(13)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            Color.secondary.opacity(0.14),
+            in: RoundedRectangle(cornerRadius: 22, style: .continuous)
+        )
+    }
+
+    private var dinnerCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .center) {
+                Button {
+                    showDinner.toggle()
+                } label: {
+                    HStack(spacing: 8) {
+                        Text("Dinner")
+                            .military(20, bold: true)
+                        Image(systemName: showDinner ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint(showDinner ? "Hides the meal" : "Shows the meal")
+                Spacer()
+                Button(briefLoading ? "Writing" : "Update") {
+                    Task { await refreshBrief(force: true) }
+                }
+                .buttonStyle(.bordered)
+                .disabled(briefLoading)
+                .military(15, bold: true)
+            }
+            if showDinner, let brief {
+                Text(brief.dinnerName)
+                    .military(17, bold: true)
+                ForEach(Array(brief.ingredients.enumerated()), id: \.offset) { _, item in
+                    Text(item)
+                        .military(15)
+                        .foregroundStyle(.secondary)
+                }
+                ForEach(Array(brief.steps.enumerated()), id: \.offset) { index, step in
+                    Text("\(index + 1). \(step)")
+                        .military(15)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Text("One meal from the pantry. It is not a complete diet.")
+                    .military(12)
+                    .foregroundStyle(.secondary)
+            } else if showDinner, !briefNote.isEmpty {
+                Text(briefNote)
+                    .military(15)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -161,25 +257,84 @@ struct ContentView: View {
     }
 
     private var healthTitle: String {
-        session.todayTotals.moving >= Bulldog.dailyMovingSeconds ? "Day covered" : "Today"
+        if session.dayOffset > 0 { return "Tomorrow" }
+        if session.dayOffset < 0 { return dayTitle }
+        let meters = session.todayTotals.distance
+        return meters >= DayBrief.minimumMiles * DistanceUnit.metersPerMile ? "Day covered" : "Today"
     }
 
     private var healthBody: String {
-        let today = session.range == .day ? session.period : session.todayTotals
-        let week = session.weekTotals
-        let remaining = max(0, Bulldog.dailyMovingSeconds - today.moving)
-        let todayLine = "Today Max has \(session.unit.text(meters: today.distance)), \(duration(today.resting)) resting, and \(duration(today.moving)) moving."
-        let weekLine = "This week he has \(session.unit.text(meters: week.distance)), \(duration(week.resting)) resting, and \(duration(week.moving)) moving."
-        if remaining == 0 {
-            return "\(todayLine) The 30 minutes of easy walking are covered. \(weekLine)"
+        if session.dayOffset > 0 {
+            return "Tomorrow's goal is written from today's distance, strain, and speed."
         }
-        return "\(todayLine) He still needs \(duration(remaining)) of easy walking, in short outings. \(weekLine)"
+        let today = session.todayTotals
+        let week = session.weekTotals
+        let who = session.profile.name
+        let todayLine = "\(dayTitle) \(who) has \(session.unit.text(meters: today.distance)), \(duration(today.resting)) resting, and \(duration(today.moving)) moving. Strain \(String(format: "%.1f", session.strain.strain))."
+        let weekLine = "This week he has \(session.unit.text(meters: week.distance)), \(duration(week.resting)) resting, and \(duration(week.moving)) moving."
+        let left = max(0, DayBrief.minimumMiles - today.distance / DistanceUnit.metersPerMile)
+        if left < 0.05 {
+            return "\(todayLine) The 3 miles are covered. \(weekLine)"
+        }
+        return "\(todayLine) He still needs \(String(format: "%.2f", left)) mi, in short outings. \(weekLine)"
     }
 
-    private func recordedShare(_ seconds: Int) -> Double {
-        let total = session.period.resting + session.period.moving
-        guard total > 0 else { return 0 }
-        return Double(seconds) / Double(total)
+    private func refreshBrief(force: Bool) async {
+        let day = DayBriefCache.dayString(for: session.anchorDate)
+        let kind: DayBrief.Kind = session.dayOffset > 0 ? .forecast : .record
+        if !force, let cached = DayBriefCache.load(day: day, kind: kind.rawValue) {
+            brief = cached
+            briefNote = ""
+            return
+        }
+        guard !briefLoading else { return }
+        briefLoading = true
+        if !force { briefNote = "" }
+        defer { briefLoading = false }
+        let source = session.noteSource()
+        let speed = String(format: "%.2f m/s", source.strain.averageMetersPerSecond)
+        do {
+            let note = try await DayBriefClient.fetch(
+                profile: session.profile,
+                today: source.day,
+                week: source.week,
+                dayLabel: kind == .forecast ? "Today" : dayTitle,
+                kind: kind,
+                strain: source.strain.strain,
+                averageSpeed: speed
+            )
+            brief = note
+            DayBriefCache.save(note, day: day, kind: kind.rawValue)
+        } catch DayBriefError.missingKey {
+            briefNote = "This note needs an OpenRouter key on this phone."
+        } catch DayBriefError.requestFailed(let status) {
+            briefNote = "This note did not come back (\(status))."
+        } catch {
+            briefNote = "This note did not come back."
+        }
+    }
+
+    private var sleepProgress: Double {
+        min(1, Double(session.todayTotals.resting) / Double(Bulldog.dailyRestingSeconds))
+    }
+
+    private var movementProgress: Double {
+        min(1, Double(session.todayTotals.moving) / Double(Bulldog.dailyMovingSeconds))
+    }
+
+    private var strainProgress: Double {
+        min(1, session.strain.strain / StrainModel.scale)
+    }
+
+    private var velocityText: String {
+        let average = session.strain.averageMetersPerSecond
+        let peak = session.strain.peakMetersPerSecond
+        switch session.unit {
+        case .meters:
+            return String(format: "Velocity %.2f m/s average, %.2f m/s peak", average, peak)
+        case .miles:
+            return String(format: "Velocity %.1f mph average, %.1f mph peak", average * 2.236936, peak * 2.236936)
+        }
     }
 
     private var dailyLog: some View {
@@ -266,57 +421,20 @@ struct ContentView: View {
         return session.connected ? "Disconnect" : "Connect"
     }
 
-    private var calibrateButton: some View {
-        Button(session.calibrating ? "Calibrating" : "Calibrate") {
-            showCalibration = true
+    private var settingsButton: some View {
+        Button {
+            showSettings = true
+        } label: {
+            Label("Settings", systemImage: "gearshape")
         }
         .buttonStyle(.bordered)
         .military(17, bold: true)
-        .accessibilityHint("Set the stride from a walk whose distance you already know")
-    }
-
-    private var strideTuner: some View {
-        DisclosureGroup("Stride") {
-            VStack(alignment: .leading, spacing: 8) {
-                labeledSlider
-                Text("Peaks this connection: \(session.connectionPeaks)")
-                    .military(13)
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
-                Text("Starting stride is 0.83 m, from large-dog walk research. Calibrate replaces it with a walk whose distance you already know. Days already saved keep the stride they were written with. The slider stays in meters.")
-                    .military(13)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.top, 8)
-        }
-        .military(17, bold: true)
-    }
-
-    private var labeledSlider: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text("Meters per peak")
-                    .military(17)
-                Spacer()
-                Text(metersText)
-                    .military(17)
-                    .monospacedDigit()
-                    .foregroundStyle(.secondary)
-            }
-            Slider(value: metersBinding, in: StrideCalibration.minimumMetersPerPeak...StrideCalibration.maximumMetersPerPeak)
-        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityHint("Set stride, name, age, breed, and weight")
     }
 
     private var rangeBinding: Binding<HistoryRange> {
         Binding(get: { session.range }, set: { session.setRange($0) })
-    }
-
-    private var unitBinding: Binding<DistanceUnit> {
-        Binding(get: { session.unit }, set: { session.setUnit($0) })
-    }
-
-    private var metersBinding: Binding<Double> {
-        Binding(get: { session.metersPerPeak }, set: { session.setMeters($0) })
     }
 
     private var motionColor: Color {
@@ -326,41 +444,28 @@ struct ContentView: View {
         }
     }
 
+    private var dayTitle: String {
+        let calendar = Calendar.current
+        if session.dayOffset == 0 { return "Today" }
+        if session.dayOffset == 1 { return "Tomorrow" }
+        if session.dayOffset == -1 { return "Yesterday" }
+        return HistoryStore.label(session.anchorDate, step: .day, calendar: calendar)
+    }
+
     private var periodTitle: String {
         let calendar = Calendar.current
-        let bounds = session.range.bounds(containing: Date(), calendar: calendar)
+        let bounds = session.range.bounds(containing: session.anchorDate, calendar: calendar)
         switch session.range {
         case .day:
-            if calendar.isDateInToday(bounds.start) { return "Today" }
-            return HistoryStore.label(bounds.start, step: .day, calendar: calendar)
+            return dayTitle
         case .week:
-            return "This week"
+            return "Week of \(HistoryStore.label(bounds.start, step: .day, calendar: calendar))"
         case .month:
             let formatter = DateFormatter()
             formatter.calendar = calendar
             formatter.setLocalizedDateFormatFromTemplate("MMMM y")
             return formatter.string(from: bounds.start)
         }
-    }
-
-    private var goalSeconds: Int {
-        let moving = session.period.moving
-        guard session.range != .day else { return moving }
-        return moving / elapsedDays
-    }
-
-    private var elapsedDays: Int {
-        let calendar = Calendar.current
-        let bounds = session.range.bounds(containing: Date(), calendar: calendar)
-        let end = min(Date(), bounds.end.addingTimeInterval(-1))
-        let start = calendar.startOfDay(for: bounds.start)
-        let stop = calendar.startOfDay(for: end)
-        let days = calendar.dateComponents([.day], from: start, to: stop).day ?? 0
-        return max(1, days + 1)
-    }
-
-    private var metersText: String {
-        String(format: "%.2f m", session.metersPerPeak)
     }
 
     private func duration(_ seconds: Int) -> String {
@@ -381,39 +486,81 @@ struct ContentView: View {
     }
 }
 
-private struct MetricRing: View {
-    let title: String
-    let value: String
-    let caption: String
-    let progress: Double
-    let tint: Color
+private struct DogSettingsSheet: View {
+    @ObservedObject var session: StrapSession
+    @Environment(\.dismiss) private var dismiss
+    @State private var name = ""
+    @State private var breed = ""
+    @State private var age = 3
+    @State private var weight = 55
+    @State private var showCalibration = false
 
     var body: some View {
-        VStack(spacing: 8) {
-            ZStack {
-                Circle()
-                    .stroke(tint.opacity(0.22), lineWidth: 9)
-                Circle()
-                    .trim(from: 0, to: CGFloat(min(1, max(0, progress))))
-                    .stroke(tint, style: StrokeStyle(lineWidth: 9, lineCap: .round))
-                    .rotationEffect(.degrees(-90))
-                Text(value)
-                    .military(15, bold: true)
-                    .monospacedDigit()
-                    .minimumScaleFactor(0.45)
-                    .lineLimit(1)
-                    .padding(.horizontal, 10)
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("Name", text: $name)
+                    TextField("Breed", text: $breed)
+                    Stepper(value: $age, in: 0...30) {
+                        Text("Age \(age)")
+                    }
+                    Stepper(value: $weight, in: 1...200) {
+                        Text("Weight \(weight) lb")
+                    }
+                } header: {
+                    Text("Dog")
+                }
+                Section {
+                    HStack {
+                        Text("Meters per peak")
+                        Spacer()
+                        Text(String(format: "%.2f m", session.metersPerPeak))
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
+                    Slider(
+                        value: metersBinding,
+                        in: StrideCalibration.minimumMetersPerPeak...StrideCalibration.maximumMetersPerPeak
+                    )
+                    Text("Saved days keep the stride they were written with.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                    Button(session.calibrating ? "Calibrating" : "Calibrate") {
+                        showCalibration = true
+                    }
+                } header: {
+                    Text("Stride")
+                }
             }
-            .frame(width: 104, height: 104)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("\(title), \(value), \(caption)")
-            Text(title)
-                .military(12, bold: true)
-            Text(caption)
-                .military(11)
-                .foregroundStyle(.secondary)
+            .navigationTitle("Settings")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                Button("Done") {
+                    session.setProfile(DogProfile(
+                        name: name,
+                        breed: breed,
+                        ageYears: age,
+                        weightPounds: weight
+                    ))
+                    dismiss()
+                }
+            }
+            .sheet(isPresented: $showCalibration) {
+                CalibrationSheet(session: session)
+            }
         }
-        .frame(maxWidth: .infinity)
+        .onAppear {
+            name = session.profile.name
+            breed = session.profile.breed
+            age = session.profile.ageYears
+            weight = session.profile.weightPounds
+        }
+    }
+
+    private var metersBinding: Binding<Double> {
+        Binding(get: { session.metersPerPeak }, set: { session.setMeters($0) })
     }
 }
 

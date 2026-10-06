@@ -23,7 +23,7 @@ let package = Package(
                 .product(name: "WhoopBLE", package: "Asherlc__whoop-ble-swift"),
             ],
             path: "App",
-            exclude: ["VV00PApp.swift", "Fonts"]
+            exclude: ["VV00PApp.swift", "Fonts", "OpenRouter.plist", "OpenRouter.example.plist"]
         ),
         .target(
             name: "VV00PCore",

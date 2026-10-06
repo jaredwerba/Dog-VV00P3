@@ -13,6 +13,7 @@
 		956833F16BA162D35C8C273B /* MovementAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02495960CB819B1F3379E6B2 /* MovementAlert.swift */; };
 		AB09D8CD6F6F4C89FB1EFA41 /* OCRA.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9B5A9FAFE164BAAA33212E4F /* OCRA.ttf */; };
 		B20798BBE248DFA56AD47243 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AB29A4B9D762B76143EA6B2 /* ContentView.swift */; };
+		B558FEB260D9C525919F8E6F /* DayBriefClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA5AE7C18332D798FCFBF0B1 /* DayBriefClient.swift */; };
 		C7997FE0D6D2FD94FE05233B /* VV00PCore in Frameworks */ = {isa = PBXBuildFile; productRef = ECA49C34D76E3582FDE12E5B /* VV00PCore */; };
 		CB826A86DB7A8CF8F374FFD7 /* WhoopBLE in Frameworks */ = {isa = PBXBuildFile; productRef = 173CABF606C30036046C477B /* WhoopBLE */; };
 		CC481A669D72447A60091F68 /* OCRABold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3B80E5FF4B5E439989976096 /* OCRABold.ttf */; };
@@ -31,6 +32,7 @@
 		9AB29A4B9D762B76143EA6B2 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		9B5A9FAFE164BAAA33212E4F /* OCRA.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = OCRA.ttf; sourceTree = "<group>"; };
 		D234168E993F2D8717DECCC4 /* VV00PApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VV00PApp.swift; sourceTree = "<group>"; };
+		DA5AE7C18332D798FCFBF0B1 /* DayBriefClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayBriefClient.swift; sourceTree = "<group>"; };
 		F11242C6FCB173418C9873CC /* Asherlc__whoop-ble-swift */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "Asherlc__whoop-ble-swift"; path = "../src/Asherlc__whoop-ble-swift"; sourceTree = SOURCE_ROOT; };
 		F362A7F42E3E585B4D75E698 /* VV00P.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = VV00P.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -70,6 +72,7 @@
 			children = (
 				0969EC31024F088E89FDEA7C /* AnalyticsView.swift */,
 				9AB29A4B9D762B76143EA6B2 /* ContentView.swift */,
+				DA5AE7C18332D798FCFBF0B1 /* DayBriefClient.swift */,
 				6AADD3F1BFED51CA999B6E8A /* DogPhoto.swift */,
 				51569EC79B61520C13E523F4 /* MilitaryFont.swift */,
 				02495960CB819B1F3379E6B2 /* MovementAlert.swift */,
@@ -106,6 +109,7 @@
 			buildConfigurationList = 0CB527B2A45EA328074D0518 /* Build configuration list for PBXNativeTarget "VV00P" */;
 			buildPhases = (
 				1E4E240ADD20E11B4F8ADEA0 /* Sources */,
+				C18624FCEFAFEF621C147B4B /* Copy OpenRouter key when present */,
 				C00F158FC43E33B740812B49 /* Resources */,
 				55F1CFC5C8F70E9869B29490 /* Frameworks */,
 			);
@@ -172,6 +176,28 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		C18624FCEFAFEF621C147B4B /* Copy OpenRouter key when present */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Copy OpenRouter key when present";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "key=\"${SRCROOT}/App/OpenRouter.plist\"\ndest=\"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app\"\nif [ -f \"$key\" ]; then\n  cp \"$key\" \"$dest/OpenRouter.plist\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		1E4E240ADD20E11B4F8ADEA0 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -179,6 +205,7 @@
 			files = (
 				0FF354125D41F208F1F743CD /* AnalyticsView.swift in Sources */,
 				B20798BBE248DFA56AD47243 /* ContentView.swift in Sources */,
+				B558FEB260D9C525919F8E6F /* DayBriefClient.swift in Sources */,
 				D7D742EC975BE05B92CADD23 /* DogPhoto.swift in Sources */,
 				52D632D6F32423B2321C81E3 /* MilitaryFont.swift in Sources */,
 				956833F16BA162D35C8C273B /* MovementAlert.swift in Sources */,

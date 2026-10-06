@@ -18,6 +18,9 @@ public enum Bulldog {
     /// Forty minutes is the usual ceiling, so the goal stays under it.
     public static let dailyMovingMinutes = 30
     public static let dailyMovingSeconds = dailyMovingMinutes * 60
+    /// The sleep ring fills against 12 hours of resting. The stored label is still resting.
+    public static let dailyRestingHours = 12
+    public static let dailyRestingSeconds = dailyRestingHours * 60 * 60
 }
 
 /// Collar means from Karimjee, Harron, Piercy, and Daley, R Soc Open Sci 2024
