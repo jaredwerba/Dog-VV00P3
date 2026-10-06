@@ -1,0 +1,56 @@
+Weekend plan: daily dog movement from an old WHOOP 5.0 or MG
+
+Goal: steps, movement class, and a rough distance. No heart rate.
+Not a map. Not a live location.
+
+SATURDAY MORNING — prove the pipe on a person first
+  1. Pair the pod with the offline client only. Forget it from the
+     official WHOOP app first, or the two centrals fight.
+     Confirm the serial. 5AG is 5.0. 5AM is MG. Either is fine.
+  2. Wear it on a wrist. Walk a counted 100 steps, or one measured block.
+     Sync.
+  3. Export the raw CSV. Pass only if all three are true:
+       the counter at byte 57 rose by about 100
+       activity class flipped from 0 (still) to 1 (walk)
+       gravity magnitude sat near 1 g while the pod was still
+     If the counter did not move, stop. Do not mount it on the dog
+     until that field is live. The fallback is the 1 Hz dynamic-g
+     peak detector the app already has. Worse pedometer, still a log.
+
+SATURDAY AFTERNOON — collar and a stride constant
+  4. Collar, not a wrist strap. The pod is 10.6 mm thick and 26.5 g.
+     On a loose collar it sits under the jaw or spins. Sew or tape it
+     into a sleeve so the long axis stays fixed relative to the neck.
+     Snug matters for the pedometer. IP68 covers rain, not a bath.
+  5. Calibrate on this dog. Walk a measured 100 m, or one loop whose
+     length you already know, collar on, then sync.
+     stride_m = meters / counter_delta
+     Do it twice: a walk and a trot. Class 1 and class 2 will not share
+     a stride. Expect 20 to 40 percent error. That is enough to tell a
+     lazy day from zoomies. It is not a training log.
+     The 0.83 m preset in Motion.swift is a starting guess for a dog
+     over 25 kg. Replace it with the measured number.
+  6. Leave the optical LEDs alone. Do not spend the weekend trying to
+     disable heart rate.
+
+SUNDAY — the daily loop
+  7. Charge on the USB-C puck every 10 to 12 days, off the collar.
+  8. Once a day, bring the collar into the room and pull history.
+     Do not stream from the yard. The data is already on the pod.
+  9. Reduce. Do not build a dashboard first.
+       steps     = last counter minus first, inside the time window,
+                   plus 65536 if the delta went negative
+       active    = seconds with class 1 or 2
+       rest      = seconds with class 0
+       distance  = steps times the measured stride
+       thrash    = dynamic g above about 0.3 g, sustained
+                   (rolling and wrestling that a pedometer under-counts)
+  10. One page: date, steps, active minutes, estimated km, and a
+      still/walk/run timeline. SQLite is already the history store
+      in this project. A chart is the last hour, not the first.
+
+TRAPS
+  The counter is cumulative. Always difference it inside a window.
+  A neck is not a wrist. Head bobs add steps. Short bursts get missed.
+  First week is calibration, not truth.
+  Two bonds at once will look like a dead strap.

@@ -1,0 +1,57 @@
+WHOOP 5.0 / MG sensor, for a dog collar
+
+WHAT IT IS
+  Screenless fitness pod. Released May 2025.
+  Size: 34.7 x 24 x 10.6 mm. Weight about 26.5 g.
+  Water: IP68, submersible to 10 m. Rain and a puddle, not a swim session.
+  Battery: about 14 days. Charge off the collar on the USB-C puck
+  (about 120 minutes on the basic charger; wireless PowerPack is optional
+  and charges on-wrist).
+  Radio: Bluetooth Low Energy only. No Wi-Fi on the strap.
+  Processor reported in a teardown: Ambiq ARM Cortex-M4 with Bluetooth.
+
+WHAT IT SENSES
+  Motion: accelerometer and gyroscope.
+  The 6-axis part documented for firmware 50.42.1.0 is a TDK InvenSense
+  ICM-45686. That chip has an on-chip pedometer (TDK APEX) that can report
+  a step count, a cadence, and an activity class of Walk, Run, or Unknown.
+  The pedometer runs on the accelerometer, not the gyro.
+  Chip ranges, not WHOOP's configured ranges: accel up to +/-32 g,
+  gyro up to +/-4000 dps. WHOOP does not publish which range it selected.
+  Also on the pod, and not needed for this project: optical heart rate,
+  SpO2, skin temperature (ams OSRAM AS6221), vibration motor (TI DRV2625).
+  Optical front end documented as Analog Devices MAX86176.
+  No barometer. No compass. No microphone. No speaker. No display.
+
+5.0 VERSUS MG
+  Same motion sensor. MG adds an ECG clasp and a revised sensor board.
+  Serial prefix 5AG is a 5.0. Serial prefix 5AM is an MG.
+  Hardware revision containing WG50 is a 5.0.
+  Either pod works for steps and movement. Ignore ECG.
+
+WHAT IT DOES NOT HAVE
+  No GPS chip. "Connected GPS" in spec sheets means the phone's GPS while
+  a workout is started in the official app. Reviews and WHOOP's own community
+  staff say the band cannot record a route by itself.
+  Ordinary step distance in the official app is a stride estimate, not GPS.
+  WHOOP says steps come from the accelerometer, with a model that tries to
+  ignore driving and cycling, plus a stride-length estimate. Wrist wear is
+  what they validate. A dog neck is not that.
+  BLE range is a room, not a yard and not a park. This cannot answer
+  "where is the dog."
+
+HOW IT TALKS
+  BLE peripheral. Custom service:
+    fd4b0001-cce1-4033-93ce-002d5875f58a
+  Command write: fd4b0002 (same suffix).
+  Notify: fd4b0003, fd4b0004, fd4b0005, fd4b0007.
+  Frames are WHOOP 5 format: 0xAA, format 0x01, length, CRC16-Modbus over
+  the first 6 bytes, inner record at byte 8, CRC32 at the tail.
+  A second phone or the official app left bonded will fight the link.
+  Pair one central.
+
+ON-DEVICE MEMORY
+  The useful motion log is the historical store, not a live stream from
+  the yard. The offline client treats a full offload as roughly the last
+  14 days. Pull it when the collar is in the room. Do not depend on a
+  live BLE session outdoors.

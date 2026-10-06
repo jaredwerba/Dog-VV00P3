@@ -1,0 +1,88 @@
+Motion fields an offline WHOOP 5 client can read
+
+Source of the layout: NOOP docs/PROTOCOL_SENSORS.md, firmware boundary
+50.42.1.0 unless a line says otherwise. Offsets are absolute in the
+reassembled format-1 frame, little-endian. Local copy of that client:
+  /Users/jkw/whoop-archive/repos/ryanbr__noop
+  and the Dog-VV00P2 checkout of the same tree.
+
+The record that matters is historical packet type 47, layout 18 (R18),
+the biometric summary. Fixed shape 124 bytes, CRC at offset 120.
+It is the once-per-second stored record, not the raw IMU burst.
+
+R18 FIELDS FOR A DOG LOG
+  Offset 15   u32   Unix seconds. This is the clock. Do not invent time
+                    by counting records.
+  Offset 41   f32   Dynamic acceleration, gravity removed, in g.
+                    Accept finite values in 0..8. This is the magnitude
+                    the existing PaceModel already consumes as dynamicG.
+  Offset 45   f32   Gravity X, g
+  Offset 49   f32   Gravity Y, g
+  Offset 53   f32   Gravity Z, g
+                    At rest the three should combine to about 1 g.
+                    That check is how you know the decode is real.
+  Offset 57   u16   Selected cumulative step/motion counter.
+                    Normal case: the hardware pedometer count.
+                    If software override is on, 57 is the software count,
+                    61 keeps the hardware count, and 64 is 0x10.
+                    With no override, bytes 61-62 and 64 are zero.
+                    Do not turn a source switch into a fake step delta.
+  Offset 59   u16   Cadence-like raw value (high byte zero).
+                    Not a documented steps-per-minute. Keep it raw.
+  Offset 61   u16   Hardware counter only while software override is on.
+  Offset 63   u8    Activity class: 0 still, 1 walk, 2 run.
+                    Any other class is stored as 0xFF and must not be
+                    shown as still, walk, or run.
+  Offset 64   u8    0x10 if software counter override is active, else 0.
+  Offset 81   bits 4-5   Band motion/rest: 0 WAKE, 1 STILL, 2 SLEEP, 3 UP.
+                    This is band state, not a sleep stage, and not a
+                    dog posture.
+
+WHAT THE LOCAL CLIENT ALREADY STORES
+  NOOP decodes offset 57 and 63 into StepSample:
+    ts, counter, activityClass (0 still / 1 walk / 2 run, or nil)
+  Gravity x/y/z and the dynamic magnitude go to GravitySample.
+  Both can be dumped from the diagnostic raw CSV:
+    stream=steps  -> step_counter
+    stream=gravity -> grav_x, grav_y, grav_z
+  The decoder marks the step counter APPROXIMATE. It is not proven equal
+  to the number in the official WHOOP app. Rollover, reset, and day
+  boundaries are unresolved. It is a cumulative counter, not a midnight
+  total.
+
+HOW TO TURN THE COUNTER INTO A DAY
+  Window the samples by the unix timestamp.
+  steps = last_counter - first_counter
+  If that delta is negative, add 65536 (16-bit wrap).
+  Do not assume the counter resets at midnight.
+  Active seconds = samples whose activity class is 1 or 2.
+  Rest seconds = class 0.
+  Distance = steps times a stride measured on this dog, not a human
+  height formula and not the 0.83 m large-dog published walk stride
+  until a measured loop says that number is close.
+
+RAW IMU, IF THE COUNTER IS USELESS ON A NECK
+  Layout 21 (R21) is the six-axis buffer. 1244 bytes. Up to 100 accel
+  samples and 100 gyro samples, counts independent.
+  An earlier convention scales accel as raw/4096 g and gyro as
+  raw * 2000 / 32768 degrees per second, at 100 Hz. That scale is not
+  proven for every firmware config. Keep raw counts if the scale is
+  unknown.
+  Live raw IMU is on demand (command 81 then 106), a bounded window,
+  not the all-day store. Do not build the daily log on that stream.
+  The daily log should stay on R18: one row a second, already on flash.
+
+WHAT THIS PROJECT ALREADY DOES INSTEAD
+  Sources/VV00PCore/Motion.swift does not read byte 57.
+  It classifies a one-second mean of dynamic g:
+    at or below 0.05 g  lying
+    up through 0.195 g  sitting (stand is folded in)
+    above 0.195 g       moving
+  Distance is peaks of that signal times metersPerPeak (0.83 m start
+  for a 55 lb English bulldog, from the large-dog same-paw walk stride
+  in Kim, Kazmierczak, and Breur 2011, and expected to read long until
+  one measured walk).
+  That path matches the R18 dynamic-acceleration field. The hardware
+  step counter is an optional second source, not a requirement.
+  A human pedometer on a dog neck will miss short bursts and count
+  some head bobs. Treat the first week as calibration.

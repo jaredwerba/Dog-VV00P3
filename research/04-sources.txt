@@ -1,0 +1,50 @@
+Sources
+
+Read in full or in the cited section. Spec-sheet "Connected GPS" and
+"Distance: Yes" are phone-assisted features, not a chip in the pod.
+The two independent reviews below are what settle that.
+
+Hardware and official behavior
+  WHOOP 5.0 specs (size, IP68, 14+ day battery, sensor list, connected GPS)
+    https://gadgetsandwearables.com/technical-specs/whoop-band-5-0/
+  WHOOP support, Unlock New with WHOOP 5.0 (dimensions, weight, battery, accelerometer)
+    https://support.whoop.com/s/article/Unlock-New-with-WHOOP-5-0
+  WHOOP support, Steps (accelerometer, stride estimate, GPS only in a workout)
+    https://support.whoop.com/s/article/Steps?language=en_US
+  TechInsights teardown notes (Ambiq Cortex-M4, TDK 6-axis IMU)
+    https://electronics360.globalspec.com/article/23159/techinsights-teardown-whoop-5-0
+  TechGearLab review (no built-in GPS; distance needs the phone)
+    https://www.techgearlab.com/reviews/wearable-tech/fitness-tracker/whoop-4-0
+  Fitcoin, Is Whoop good for running (no GPS chip on 5.0 or MG)
+    https://www.fitcoin.co/articles/is-whoop-good-for-running
+  WHOOP community, staff reply that the band uses the phone for route GPS
+    https://www.community.whoop.com/t/whoop-not-back-syncing-w-apple-health-for-gps-data/11546
+  WIRED, Whoop MG review (no onboard GPS)
+    https://www.wired.com/review/whoop-mg/
+
+IMU part
+  TDK InvenSense ICM-45686 product page (pedometer, ranges, noise)
+    https://invensense.tdk.com/products/motion-tracking/6-axis/icm-45686/
+  TDK ICM-45686 datasheet PDF
+    https://www.mouser.com/catalog/specsheets/TDK_DS_000577_ICM_45686.pdf
+  Zephyr sample of TDK APEX pedometer (count, cadence, Walk/Run/Unknown)
+    https://docs.zephyrproject.org/latest/samples/sensor/tdk_apex/README.html
+
+Protocol, from the offline client
+  NOOP WHOOP 5 profile (ICM-45686, 5AG vs 5AM, GATT fd4b0001)
+    https://github.com/ryanbr/noop/blob/main/docs/PROTOCOL_WHOOP5.md
+    local: /Users/jkw/whoop-archive/repos/ryanbr__noop/docs/PROTOCOL_WHOOP5.md
+  NOOP sensor records (R18 offsets 41, 45/49/53, 57, 59, 61, 63, 64, 81)
+    https://github.com/ryanbr/noop/blob/main/docs/PROTOCOL_SENSORS.md
+    local: /Users/jkw/whoop-archive/repos/ryanbr__noop/docs/PROTOCOL_SENSORS.md
+  NOOP StepSample comment: counter is approximate, not proven vs the official app
+    local: Packages/WhoopProtocol/Sources/WhoopProtocol/Streams.swift
+  NOOP stores stepSample and can export stream=steps in the raw CSV
+    local: Packages/WhoopStore/Sources/WhoopStore/StreamStore.swift
+  Frame writeup, accel floats near 1 g at rest
+    https://judes.club/writing/cracking-the-whoop-5-bluetooth-protocol/
+
+Not used as proof
+  Gadgets & Wearables lists "Distance: Yes" and "Connected GPS". Those lines
+  describe the phone-assisted product, not a GNSS radio. The reviews and
+  the WHOOP Steps article override them.

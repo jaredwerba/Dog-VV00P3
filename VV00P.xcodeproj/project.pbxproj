@@ -1,0 +1,408 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0FF354125D41F208F1F743CD /* AnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0969EC31024F088E89FDEA7C /* AnalyticsView.swift */; };
+		52D632D6F32423B2321C81E3 /* MilitaryFont.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51569EC79B61520C13E523F4 /* MilitaryFont.swift */; };
+		7AC063731A67C64F34AB609A /* StrapSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08D59FCFD91701ADF5CF3208 /* StrapSession.swift */; };
+		956833F16BA162D35C8C273B /* MovementAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02495960CB819B1F3379E6B2 /* MovementAlert.swift */; };
+		AB09D8CD6F6F4C89FB1EFA41 /* OCRA.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9B5A9FAFE164BAAA33212E4F /* OCRA.ttf */; };
+		B20798BBE248DFA56AD47243 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AB29A4B9D762B76143EA6B2 /* ContentView.swift */; };
+		C7997FE0D6D2FD94FE05233B /* VV00PCore in Frameworks */ = {isa = PBXBuildFile; productRef = ECA49C34D76E3582FDE12E5B /* VV00PCore */; };
+		CB826A86DB7A8CF8F374FFD7 /* WhoopBLE in Frameworks */ = {isa = PBXBuildFile; productRef = 173CABF606C30036046C477B /* WhoopBLE */; };
+		CC481A669D72447A60091F68 /* OCRABold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3B80E5FF4B5E439989976096 /* OCRABold.ttf */; };
+		CCBFED037BD7C88D14B08D8B /* VV00PApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D234168E993F2D8717DECCC4 /* VV00PApp.swift */; };
+		D7D742EC975BE05B92CADD23 /* DogPhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AADD3F1BFED51CA999B6E8A /* DogPhoto.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		02495960CB819B1F3379E6B2 /* MovementAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MovementAlert.swift; sourceTree = "<group>"; };
+		08D59FCFD91701ADF5CF3208 /* StrapSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrapSession.swift; sourceTree = "<group>"; };
+		0969EC31024F088E89FDEA7C /* AnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
+		3B80E5FF4B5E439989976096 /* OCRABold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = OCRABold.ttf; sourceTree = "<group>"; };
+		51569EC79B61520C13E523F4 /* MilitaryFont.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MilitaryFont.swift; sourceTree = "<group>"; };
+		69058FC40E948CAB35656674 /* Dog-VV00P3 */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "Dog-VV00P3"; path = .; sourceTree = SOURCE_ROOT; };
+		6AADD3F1BFED51CA999B6E8A /* DogPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DogPhoto.swift; sourceTree = "<group>"; };
+		9AB29A4B9D762B76143EA6B2 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		9B5A9FAFE164BAAA33212E4F /* OCRA.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = OCRA.ttf; sourceTree = "<group>"; };
+		D234168E993F2D8717DECCC4 /* VV00PApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VV00PApp.swift; sourceTree = "<group>"; };
+		F11242C6FCB173418C9873CC /* Asherlc__whoop-ble-swift */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "Asherlc__whoop-ble-swift"; path = "../src/Asherlc__whoop-ble-swift"; sourceTree = SOURCE_ROOT; };
+		F362A7F42E3E585B4D75E698 /* VV00P.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = VV00P.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		55F1CFC5C8F70E9869B29490 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C7997FE0D6D2FD94FE05233B /* VV00PCore in Frameworks */,
+				CB826A86DB7A8CF8F374FFD7 /* WhoopBLE in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		6487D793E123EE117B237A82 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				9B5A9FAFE164BAAA33212E4F /* OCRA.ttf */,
+				3B80E5FF4B5E439989976096 /* OCRABold.ttf */,
+			);
+			path = Fonts;
+			sourceTree = "<group>";
+		};
+		95BF16368B46C12A0872B1E7 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F362A7F42E3E585B4D75E698 /* VV00P.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A1FDD4DDE3EE3571F1E6A1A0 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				0969EC31024F088E89FDEA7C /* AnalyticsView.swift */,
+				9AB29A4B9D762B76143EA6B2 /* ContentView.swift */,
+				6AADD3F1BFED51CA999B6E8A /* DogPhoto.swift */,
+				51569EC79B61520C13E523F4 /* MilitaryFont.swift */,
+				02495960CB819B1F3379E6B2 /* MovementAlert.swift */,
+				08D59FCFD91701ADF5CF3208 /* StrapSession.swift */,
+				D234168E993F2D8717DECCC4 /* VV00PApp.swift */,
+				6487D793E123EE117B237A82 /* Fonts */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		AC1CF2710E352DA9441A663E /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				F11242C6FCB173418C9873CC /* Asherlc__whoop-ble-swift */,
+				69058FC40E948CAB35656674 /* Dog-VV00P3 */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		E2C939D33D54DFA87910F99B = {
+			isa = PBXGroup;
+			children = (
+				A1FDD4DDE3EE3571F1E6A1A0 /* App */,
+				AC1CF2710E352DA9441A663E /* Packages */,
+				95BF16368B46C12A0872B1E7 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		C0A8AFAD11C0583F87F050C3 /* VV00P */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0CB527B2A45EA328074D0518 /* Build configuration list for PBXNativeTarget "VV00P" */;
+			buildPhases = (
+				1E4E240ADD20E11B4F8ADEA0 /* Sources */,
+				C00F158FC43E33B740812B49 /* Resources */,
+				55F1CFC5C8F70E9869B29490 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = VV00P;
+			packageProductDependencies = (
+				ECA49C34D76E3582FDE12E5B /* VV00PCore */,
+				173CABF606C30036046C477B /* WhoopBLE */,
+			);
+			productName = VV00P;
+			productReference = F362A7F42E3E585B4D75E698 /* VV00P.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		DC48BC39D08FD3935A2BFDDE /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					C0A8AFAD11C0583F87F050C3 = {
+						DevelopmentTeam = DUW4CY9S3L;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = FB8624A26F3A49CFF027AF8B /* Build configuration list for PBXProject "VV00P" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = E2C939D33D54DFA87910F99B;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				744BB23B40FF2044FB931FDC /* XCLocalSwiftPackageReference "." */,
+				C364ECD620C4A16A5BFC0303 /* XCLocalSwiftPackageReference "../src/Asherlc__whoop-ble-swift" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 95BF16368B46C12A0872B1E7 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C0A8AFAD11C0583F87F050C3 /* VV00P */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C00F158FC43E33B740812B49 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AB09D8CD6F6F4C89FB1EFA41 /* OCRA.ttf in Resources */,
+				CC481A669D72447A60091F68 /* OCRABold.ttf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1E4E240ADD20E11B4F8ADEA0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0FF354125D41F208F1F743CD /* AnalyticsView.swift in Sources */,
+				B20798BBE248DFA56AD47243 /* ContentView.swift in Sources */,
+				D7D742EC975BE05B92CADD23 /* DogPhoto.swift in Sources */,
+				52D632D6F32423B2321C81E3 /* MilitaryFont.swift in Sources */,
+				956833F16BA162D35C8C273B /* MovementAlert.swift in Sources */,
+				7AC063731A67C64F34AB609A /* StrapSession.swift in Sources */,
+				CCBFED037BD7C88D14B08D8B /* VV00PApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		080E14EFBA1AADC5151D0D18 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		AA34E9EA1B66BF024A9548AD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = DUW4CY9S3L;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Max Werba";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Max Werba reads motion from your WHOOP strap to estimate dog movement and distance.";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 3.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jaredwerba.vv00p;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		DCFE2B46C7B595F7CEAD1B2D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = DUW4CY9S3L;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Max Werba";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Max Werba reads motion from your WHOOP strap to estimate dog movement and distance.";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 3.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jaredwerba.vv00p;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		FD2A1E53503402D735C87300 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0CB527B2A45EA328074D0518 /* Build configuration list for PBXNativeTarget "VV00P" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA34E9EA1B66BF024A9548AD /* Debug */,
+				DCFE2B46C7B595F7CEAD1B2D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FB8624A26F3A49CFF027AF8B /* Build configuration list for PBXProject "VV00P" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FD2A1E53503402D735C87300 /* Debug */,
+				080E14EFBA1AADC5151D0D18 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		744BB23B40FF2044FB931FDC /* XCLocalSwiftPackageReference "." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = .;
+		};
+		C364ECD620C4A16A5BFC0303 /* XCLocalSwiftPackageReference "../src/Asherlc__whoop-ble-swift" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../src/Asherlc__whoop-ble-swift";
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		173CABF606C30036046C477B /* WhoopBLE */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = WhoopBLE;
+		};
+		ECA49C34D76E3582FDE12E5B /* VV00PCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = VV00PCore;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = DC48BC39D08FD3935A2BFDDE /* Project object */;
+}

@@ -1,0 +1,18 @@
+WHOOP 5.0 / MG as a basic dog movement logger
+Written 2026-10-05 from the research pass for the weekend collar project.
+Plain text. No cloud, no subscription path, no location tracking.
+
+This folder is research, not a build plan for the Swift sources. The app in
+Sources/VV00PCore already estimates distance as peaks times meters-per-peak
+(English bulldog preset 0.83 m, walk onset 0.195 g). These notes say what the
+strap can actually supply, and what it cannot.
+
+Files
+  01-sensor.txt        What the pod is, and what it is not
+  02-motion-fields.txt Bytes an offline client can already read
+  03-weekend-plan.txt  How to turn that into a daily dog log
+  04-sources.txt       Where each claim came from
+
+Bottom line
+  Use it as a collar activity logger: steps, still/walk/run, a rough distance.
+  Do not use it as a pet finder. There is no GPS chip in the pod.

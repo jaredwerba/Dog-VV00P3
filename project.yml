@@ -1,0 +1,36 @@
+name: VV00P
+options:
+  bundleIdPrefix: com.jaredwerba
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+packages:
+  VV00PCore:
+    path: .
+  WhoopBLE:
+    path: ../src/Asherlc__whoop-ble-swift
+targets:
+  VV00P:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+    dependencies:
+      - package: VV00PCore
+        product: VV00PCore
+      - package: WhoopBLE
+        product: WhoopBLE
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Max Werba
+        INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription: Max Werba reads motion from your WHOOP strap to estimate dog movement and distance.
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_FILE: Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.jaredwerba.vv00p
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.0"
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: DUW4CY9S3L
+        MARKETING_VERSION: "3.0"
+        CURRENT_PROJECT_VERSION: "1"
