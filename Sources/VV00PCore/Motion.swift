@@ -11,8 +11,10 @@ public enum Bulldog {
     public static let ageYears = 3
     public static let weightPounds = 55
     public static let metersPerPeak = 0.83
-    /// Midpoint of the published stand mean (0.13 g) and walk mean (0.26 g).
-    public static let walkOnsetG = 0.195
+    /// The collar walk in Karimjee 2024 sat near 0.26 g, and a collar stand near 0.13 g.
+    /// The pod on the back of the harness is quieter, so those walks fell under 0.195 g
+    /// and were saved as rest. 0.06 g counts that back walk. A still strap stays under it.
+    public static let walkOnsetG = 0.06
     /// Active adult English bulldogs are guided to about 20–40 minutes of easy
     /// activity a day, in short walks. Thirty minutes is the daily moving goal.
     /// Forty minutes is the usual ceiling, so the goal stays under it.
@@ -23,9 +25,8 @@ public enum Bulldog {
     public static let dailyRestingSeconds = dailyRestingHours * 60 * 60
 }
 
-/// Collar means from Karimjee, Harron, Piercy, and Daley, R Soc Open Sci 2024
-/// set the walk-onset cut. At or below that cut the dog is resting. Above it
-/// the dog is moving, and only moving adds distance.
+/// At or below the walk-onset cut the dog is resting. Above it the dog is moving,
+/// and only moving adds distance. The cut is Bulldog.walkOnsetG.
 public enum DogMotion: String, Equatable, Sendable {
     case resting
     case moving
@@ -215,10 +216,10 @@ public struct SecondCloser {
     }
 }
 
-/// Counts a live run of moving seconds and asks for one alert at 10 seconds.
+/// Counts a live run of moving seconds and asks for one alert at 5 minutes.
 /// A resting second, or a stored second from outside the live window, starts over.
 public struct MovingBout: Equatable, Sendable {
-    public static let notifyAfterSeconds = 10
+    public static let notifyAfterSeconds = 5 * 60
     public private(set) var streak = 0
     public private(set) var notified = false
 

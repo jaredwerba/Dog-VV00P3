@@ -38,8 +38,10 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: Max Werba
         INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription: Max Werba reads motion from your WHOOP strap to estimate dog movement and distance.
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIUserInterfaceStyle: Dark
         INFOPLIST_FILE: Info.plist
         PRODUCT_BUNDLE_IDENTIFIER: com.jaredwerba.vv00p
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         TARGETED_DEVICE_FAMILY: "1"
         SWIFT_VERSION: "5.0"
         CODE_SIGN_STYLE: Automatic

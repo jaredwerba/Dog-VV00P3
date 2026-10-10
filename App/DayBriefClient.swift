@@ -27,10 +27,12 @@ enum DayBriefClient {
     static func fetch(
         profile: DogProfile,
         today: PeriodTotals,
+        yesterday: PeriodTotals,
         week: PeriodTotals,
         dayLabel: String,
         kind: DayBrief.Kind,
         strain: Double,
+        yesterdayStrain: Double,
         averageSpeed: String
     ) async throws -> DayBrief.Note {
         guard let key = OpenRouterKey.load() else { throw DayBriefError.missingKey }
@@ -50,10 +52,12 @@ enum DayBriefClient {
                 ["role": "user", "content": DayBrief.userPrompt(
                     profile: profile,
                     today: today,
+                    yesterday: yesterday,
                     week: week,
                     dayLabel: dayLabel,
                     kind: kind,
                     strain: strain,
+                    yesterdayStrain: yesterdayStrain,
                     averageSpeed: averageSpeed
                 )],
             ],

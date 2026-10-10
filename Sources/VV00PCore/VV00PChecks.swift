@@ -25,13 +25,13 @@ public enum VV00PChecks {
         expect(DayPart.part(forHour: 3) == .night, "3 AM was not night")
 
         var bout = MovingBout()
-        for _ in 0..<9 {
-            expect(bout.observe(motion: .moving, live: true) == false, "alert fired before 10 seconds")
+        for _ in 0..<(MovingBout.notifyAfterSeconds - 1) {
+            expect(bout.observe(motion: .moving, live: true) == false, "alert fired before 5 minutes")
         }
-        expect(bout.observe(motion: .moving, live: true), "the 10th moving second did not alert")
+        expect(bout.observe(motion: .moving, live: true), "the 5 minute mark did not alert")
         expect(bout.observe(motion: .moving, live: true) == false, "the same bout alerted twice")
         expect(bout.observe(motion: .resting, live: true) == false, "resting alerted")
-        for _ in 0..<9 {
+        for _ in 0..<(MovingBout.notifyAfterSeconds - 1) {
             _ = bout.observe(motion: .moving, live: true)
         }
         expect(bout.observe(motion: .moving, live: true), "a new bout did not alert")
@@ -40,16 +40,29 @@ public enum VV00PChecks {
         expect(Bulldog.dailyMovingSeconds == 1_800, "daily moving goal was \(Bulldog.dailyMovingSeconds) seconds")
         expect(Bulldog.dailyRestingSeconds == 12 * 60 * 60, "sleep goal was \(Bulldog.dailyRestingSeconds) seconds")
         expect(DayBrief.minimumMiles == 3, "daily miles were \(DayBrief.minimumMiles)")
+        let activity = ActivityReport.sentence(
+            name: "Max",
+            todayMeters: 2 * DistanceUnit.metersPerMile,
+            weekMeters: 4 * DistanceUnit.metersPerMile,
+            unit: .meters
+        )
+        expect(
+            activity == "Max has been moving 3.22 km today, 6.44 km this week, and is 67% of the daily goal. Be sure to walk him 3 times a day for a total of 4.83 km a day, 33.80 km a week.",
+            "activity sentence was \(activity)"
+        )
         expect(DayBrief.pantry.contains("yellowfin tuna"), "pantry dropped yellowfin tuna")
         let sampleToday = PeriodTotals(resting: 53 * 60, moving: 24, distance: 69.7, peaks: 80)
+        let sampleYesterday = PeriodTotals(resting: 40 * 60, moving: 90, distance: 400, peaks: 120)
         let sampleWeek = PeriodTotals(resting: 53 * 60, moving: 24, distance: 69.7, peaks: 80)
         let prompt = DayBrief.userPrompt(
             profile: .starter,
             today: sampleToday,
+            yesterday: sampleYesterday,
             week: sampleWeek,
             dayLabel: "Today",
             kind: .record,
             strain: 4.2,
+            yesterdayStrain: 1.4,
             averageSpeed: "0.83 m/s"
         )
         expect(prompt.contains("3.00 mi"), "prompt missed the 3 mile minimum: \(prompt)")
@@ -57,7 +70,10 @@ public enum VV00PChecks {
         expect(prompt.contains("55 lb"), "prompt missed the weight")
         expect(prompt.contains("yellowfin tuna"), "prompt missed the pantry")
         expect(prompt.contains("Strain: 4.2"), "prompt missed the strain number: \(prompt)")
+        expect(prompt.contains("Yesterday strain: 1.4"), "prompt missed yesterday strain: \(prompt)")
         expect(!prompt.contains("recovery"), "prompt invented a recovery score")
+        expect(DayBrief.systemPrompt(for: .record).contains("one short sentence"), "today prompt is not short")
+        expect(DayBrief.systemPrompt(for: .record).contains("Do not describe the dog"), "today prompt still summarizes the dog")
         expect(DayBrief.systemPrompt(for: .forecast).contains("tomorrow"), "forecast prompt missed tomorrow")
         let easy = StrainModel.score(Array(repeating: StoredSecond(motion: .moving, peaks: 1, distance: 0.83), count: 1_800))
         expect(easy.strain > 9.5 && easy.strain < 10.5, "easy half hour strain was \(easy.strain)")
@@ -88,16 +104,17 @@ public enum VV00PChecks {
         let still = hold(PaceModel(), dynamicG: 0, from: 0, until: 1)
         expect(still.motion == .resting, "still was \(still.motion)")
         expect(still.distanceMeters == 0, "still produced distance")
-        expect(hold(PaceModel(), dynamicG: 0.08, from: 0, until: 1).motion == .resting, "a sit was not resting")
-        expect(hold(PaceModel(), dynamicG: 0.13, from: 0, until: 1).motion == .resting, "a stand was not resting")
+        expect(hold(PaceModel(), dynamicG: 0.04, from: 0, until: 1).motion == .resting, "a still harness was not resting")
+        expect(hold(PaceModel(), dynamicG: 0.08, from: 0, until: 1).motion == .moving, "a back walk was resting")
+        expect(hold(PaceModel(), dynamicG: 0.13, from: 0, until: 1).motion == .moving, "a collar stand level was resting on the back cut")
         expect(hold(PaceModel(), dynamicG: 0.26, from: 0, until: 1).motion == .moving, "walk was not moving")
         expect(hold(PaceModel(), dynamicG: 0.80, from: 0, until: 1).motion == .moving, "a hard trot was not moving")
         expect(DogMotion.stored("lying") == .resting, "lying did not fold into resting")
         expect(DogMotion.stored("sitting") == .resting, "sitting did not fold into resting")
 
         var standing = PaceModel()
-        _ = hold(&standing, dynamicG: 0.13, from: 0, until: 1)
-        let fidget = spike(into: &standing, at: 1.2, baseline: 0.13, crest: 0.50)
+        _ = hold(&standing, dynamicG: 0.03, from: 0, until: 1)
+        let fidget = spike(into: &standing, at: 1.2, baseline: 0.03, crest: 0.50)
         expect(fidget.motion == .resting, "a rest fidget became \(fidget.motion)")
         expect(fidget.peakCount == 0, "a sit fidget counted a peak")
 
@@ -132,6 +149,10 @@ public enum VV00PChecks {
             expect(totals.moving == 1, "replayed second was counted \(totals.moving) times")
             expect(totals.resting == 1, "resting second was missing")
             expect(abs(totals.distance - 3.32) < 0.001, "replaced distance was \(totals.distance)")
+            expect(try store.raiseDistance(from: 1_700_000_000, until: 1_700_000_200, toMeters: 3_218.688), "the short walk did not scale")
+            let raised = try store.totals(from: 1_700_000_000, until: 1_700_000_200)
+            expect(abs(raised.distance - 3_218.688) < 0.01, "raised distance was \(raised.distance)")
+            expect(try store.raiseDistance(from: 1_700_000_000, until: 1_700_000_200, toMeters: 3_218.688) == false, "the raised walk scaled again")
             expect(totals.peaks == 4, "replaced peaks were \(totals.peaks)")
             let week = try store.rows(
                 range: .week,
@@ -139,7 +160,7 @@ public enum VV00PChecks {
                 includeEmpty: true
             )
             expect(week.count == 7, "week chart had \(week.count) days")
-            expect(week.contains { abs($0.totals.distance - 3.32) < 0.001 }, "week chart dropped the saved day")
+            expect(week.contains { abs($0.totals.distance - 3_218.688) < 0.01 }, "week chart dropped the saved day")
             let line = try store.timeline(from: 1_700_000_000, until: 1_700_000_200)
             expect(line.count == 2, "timeline had \(line.count) seconds")
             expect(line.first?.peaks == 4, "timeline dropped the replaced peaks")

@@ -14,21 +14,27 @@
 		AB09D8CD6F6F4C89FB1EFA41 /* OCRA.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9B5A9FAFE164BAAA33212E4F /* OCRA.ttf */; };
 		B20798BBE248DFA56AD47243 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AB29A4B9D762B76143EA6B2 /* ContentView.swift */; };
 		B558FEB260D9C525919F8E6F /* DayBriefClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA5AE7C18332D798FCFBF0B1 /* DayBriefClient.swift */; };
+		BEF5D1F12BA1A642767154C1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 21B0DFC2E2C659F838A188CD /* Assets.xcassets */; };
 		C7997FE0D6D2FD94FE05233B /* VV00PCore in Frameworks */ = {isa = PBXBuildFile; productRef = ECA49C34D76E3582FDE12E5B /* VV00PCore */; };
 		CB826A86DB7A8CF8F374FFD7 /* WhoopBLE in Frameworks */ = {isa = PBXBuildFile; productRef = 173CABF606C30036046C477B /* WhoopBLE */; };
 		CC481A669D72447A60091F68 /* OCRABold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3B80E5FF4B5E439989976096 /* OCRABold.ttf */; };
 		CCBFED037BD7C88D14B08D8B /* VV00PApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D234168E993F2D8717DECCC4 /* VV00PApp.swift */; };
+		CECAA0345C6C2F759C4E5A69 /* ActivityChat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DC89840629E06FF4AED79B5 /* ActivityChat.swift */; };
 		D7D742EC975BE05B92CADD23 /* DogPhoto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AADD3F1BFED51CA999B6E8A /* DogPhoto.swift */; };
+		F98793A643C65759FD5AB850 /* DiaryExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1361A83599B4424675D94E03 /* DiaryExport.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		02495960CB819B1F3379E6B2 /* MovementAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MovementAlert.swift; sourceTree = "<group>"; };
 		08D59FCFD91701ADF5CF3208 /* StrapSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrapSession.swift; sourceTree = "<group>"; };
 		0969EC31024F088E89FDEA7C /* AnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
+		1361A83599B4424675D94E03 /* DiaryExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiaryExport.swift; sourceTree = "<group>"; };
+		21B0DFC2E2C659F838A188CD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		3B80E5FF4B5E439989976096 /* OCRABold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = OCRABold.ttf; sourceTree = "<group>"; };
 		51569EC79B61520C13E523F4 /* MilitaryFont.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MilitaryFont.swift; sourceTree = "<group>"; };
 		69058FC40E948CAB35656674 /* Dog-VV00P3 */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "Dog-VV00P3"; path = .; sourceTree = SOURCE_ROOT; };
 		6AADD3F1BFED51CA999B6E8A /* DogPhoto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DogPhoto.swift; sourceTree = "<group>"; };
+		7DC89840629E06FF4AED79B5 /* ActivityChat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityChat.swift; sourceTree = "<group>"; };
 		9AB29A4B9D762B76143EA6B2 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		9B5A9FAFE164BAAA33212E4F /* OCRA.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = OCRA.ttf; sourceTree = "<group>"; };
 		D234168E993F2D8717DECCC4 /* VV00PApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VV00PApp.swift; sourceTree = "<group>"; };
@@ -70,9 +76,12 @@
 		A1FDD4DDE3EE3571F1E6A1A0 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				7DC89840629E06FF4AED79B5 /* ActivityChat.swift */,
 				0969EC31024F088E89FDEA7C /* AnalyticsView.swift */,
+				21B0DFC2E2C659F838A188CD /* Assets.xcassets */,
 				9AB29A4B9D762B76143EA6B2 /* ContentView.swift */,
 				DA5AE7C18332D798FCFBF0B1 /* DayBriefClient.swift */,
+				1361A83599B4424675D94E03 /* DiaryExport.swift */,
 				6AADD3F1BFED51CA999B6E8A /* DogPhoto.swift */,
 				51569EC79B61520C13E523F4 /* MilitaryFont.swift */,
 				02495960CB819B1F3379E6B2 /* MovementAlert.swift */,
@@ -169,6 +178,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BEF5D1F12BA1A642767154C1 /* Assets.xcassets in Resources */,
 				AB09D8CD6F6F4C89FB1EFA41 /* OCRA.ttf in Resources */,
 				CC481A669D72447A60091F68 /* OCRABold.ttf in Resources */,
 			);
@@ -203,9 +213,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CECAA0345C6C2F759C4E5A69 /* ActivityChat.swift in Sources */,
 				0FF354125D41F208F1F743CD /* AnalyticsView.swift in Sources */,
 				B20798BBE248DFA56AD47243 /* ContentView.swift in Sources */,
 				B558FEB260D9C525919F8E6F /* DayBriefClient.swift in Sources */,
+				F98793A643C65759FD5AB850 /* DiaryExport.swift in Sources */,
 				D7D742EC975BE05B92CADD23 /* DogPhoto.swift in Sources */,
 				52D632D6F32423B2321C81E3 /* MilitaryFont.swift in Sources */,
 				956833F16BA162D35C8C273B /* MovementAlert.swift in Sources */,
@@ -286,6 +298,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "Max Werba";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Max Werba reads motion from your WHOOP strap to estimate dog movement and distance.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -311,6 +324,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "Max Werba";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Max Werba reads motion from your WHOOP strap to estimate dog movement and distance.";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

@@ -2,7 +2,9 @@
 
 iPhone movement diary for one English bulldog and one WHOOP 5.0 MG strap. The phone keeps distance, resting, and moving. The strap stays on the dog. There is no WHOOP account and no cloud sync.
 
-Today shows three labeled circles: Sleep out of 12 hours of resting, Movement out of 30 minutes, and Strain out of 21. The number sits inside each circle and the name sits under it. Max's photo is a separate circle above his name.
+Today shows three labeled circles: Rest out of 12 hours, Movement out of a 3 mile day, and Strain out of 21. The number sits inside each circle and the name sits under it. The app stays in dark mode. Max's photo is a separate circle above his name.
+
+Export at the bottom writes a one-page dark PDF and opens the iOS share sheet. The bone at the top left, while he is resting, opens a short chat about today's distance.
 
 << and >> step through days. Tomorrow is a written exercise goal from today's totals. Pull to refresh reloads the day. Settings hold his name, breed, age, weight, and stride.
 
