@@ -180,10 +180,33 @@ public final class HistoryStore {
         sqlite3_close(db)
     }
 
+    /// Seconds inside this range keep a stored distance when a later save is smaller.
+    public var protectedRange: Range<Int>?
+
+    /// Multiply stored distance so the span sums to `toMeters`.
+    /// A span that is already at the target, or empty, is left alone.
+    @discardableResult
+    public func raiseDistance(from: Int, until: Int, toMeters: Double) throws -> Bool {
+        guard toMeters.isFinite, toMeters > 0 else { return false }
+        let current = try totals(from: from, until: until).distance
+        guard current > 1, toMeters > current + 0.5 else { return false }
+        let factor = toMeters / current
+        guard factor.isFinite else { return false }
+        let factorText = String(format: "%.8f", locale: Locale(identifier: "en_US_POSIX"), factor)
+        let sql = "UPDATE seconds SET distance = distance * \(factorText) WHERE second >= \(from) AND second < \(until)"
+        try execute(sql)
+        return true
+    }
+
     public func save(_ second: ClosedSecond, metersPerPeak: Double) throws {
         let meters = metersPerPeak.isFinite ? metersPerPeak : 0
         let distance = second.distance(metersPerPeak: meters)
-        let safeDistance = distance.isFinite ? distance : 0
+        var safeDistance = distance.isFinite ? distance : 0
+        if let range = protectedRange, range.contains(second.second),
+           let existing = try load(second: second.second),
+           existing.distance > safeDistance {
+            safeDistance = existing.distance
+        }
         try execute(
             """
             INSERT INTO seconds(second, motion, peaks, distance)

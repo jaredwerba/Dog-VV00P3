@@ -9,6 +9,8 @@
 		<string>Fonts/OCRA.ttf</string>
 		<string>Fonts/OCRABold.ttf</string>
 	</array>
+	<key>UIUserInterfaceStyle</key>
+	<string>Dark</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>bluetooth-central</string>

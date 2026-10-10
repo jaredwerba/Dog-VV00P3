@@ -1,15 +1,25 @@
 import SwiftUI
 import VV00PCore
 
+private enum OpeningGauge {
+    static var last = Date.distantPast
+}
+
 struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
-    @StateObject private var session = StrapSession()
+    @ObservedObject var session: StrapSession
     @State private var showSettings = false
+    @State private var showChat = false
+    @State private var shareFile: ShareFile?
     @State private var showTodayNote = false
     @State private var showDinner = false
     @State private var brief: DayBrief.Note?
     @State private var briefNote = ""
     @State private var briefLoading = false
+    @State private var gaugeSweep: GaugeSweep?
+    @State private var sweepToken = 0
+    @State private var chartReveal = 0
+    @State private var lastScenePhase: ScenePhase = .active
 
     var body: some View {
         NavigationStack {
@@ -21,32 +31,42 @@ struct ContentView: View {
                         movement: movementProgress,
                         strain: strainProgress,
                         sleepValue: duration(session.todayTotals.resting),
-                        movementValue: duration(session.todayTotals.moving),
+                        movementValue: session.unit.text(meters: session.todayTotals.distance),
+                        movementCaption: "of \(session.unit.text(meters: DayBrief.minimumMiles * DistanceUnit.metersPerMile))",
                         strainValue: String(format: "%.1f", session.strain.strain),
-                        velocity: velocityText
+                        velocity: velocityText,
+                        gaugeSweep: gaugeSweep
                     ) {
                         periodPicker
                             .padding(.horizontal, 20)
                     }
                     VStack(alignment: .leading, spacing: 28) {
                         healthCard
-                        dinnerCard
                         if session.range == .day {
                             dailyLog
+                            dinnerCard
                             historyList
                         } else {
-                            AnalyticsView(range: session.range, days: session.chartDays, unit: session.unit)
+                            AnalyticsView(range: session.range, days: session.chartDays, unit: session.unit, revealToken: chartReveal)
+                            dinnerCard
                         }
                         statusBlock
                         settingsButton
+                        connectionButton
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        exportButton
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 12)
                 }
             }
             .refreshable {
-                session.reloadHistory()
+                await session.syncFromStrap()
                 await refreshBrief(force: true)
+                chartReveal += 1
+                Task { @MainActor in
+                    await playGaugeSweep()
+                }
             }
             .navigationTitle("")
             #if os(iOS)
@@ -55,7 +75,23 @@ struct ContentView: View {
             .sheet(isPresented: $showSettings) {
                 DogSettingsSheet(session: session)
             }
+            .sheet(isPresented: $showChat) {
+                ActivityChatSheet(session: session)
+            }
+            .sheet(item: $shareFile) { file in
+                ActivityShare(url: file.url)
+                    .ignoresSafeArea()
+            }
             .toolbar {
+                if #available(iOS 26, *) {
+                    ToolbarItem(placement: .topBarLeading) { restingMark }
+                        .sharedBackgroundVisibility(.hidden)
+                    ToolbarItem(placement: .topBarTrailing) { movingMark }
+                        .sharedBackgroundVisibility(.hidden)
+                } else {
+                    ToolbarItem(placement: .topBarLeading) { restingMark }
+                    ToolbarItem(placement: .topBarTrailing) { movingMark }
+                }
                 ToolbarItem(placement: .principal) {
                     HStack(spacing: 14) {
                         Button {
@@ -100,6 +136,7 @@ struct ContentView: View {
             }
             if !ProcessInfo.processInfo.arguments.contains("--screenshot") {
                 Task { await refreshBrief(force: false) }
+                playOpeningGaugeIfNeeded()
             }
         }
         .onChange(of: session.dayOffset) { _ in
@@ -111,8 +148,14 @@ struct ContentView: View {
             Task { await refreshBrief(force: false) }
         }
         .onChange(of: scenePhase) { phase in
+            let previous = lastScenePhase
+            lastScenePhase = phase
             if phase == .active {
                 session.reloadHistory()
+                session.reassertLink()
+                if previous == .background {
+                    playOpeningGaugeIfNeeded()
+                }
             } else {
                 session.flushHistory()
             }
@@ -218,7 +261,7 @@ struct ContentView: View {
                 .buttonStyle(.plain)
                 .accessibilityHint(showDinner ? "Hides the meal" : "Shows the meal")
                 Spacer()
-                Button(briefLoading ? "Writing" : "Update") {
+                Button(briefLoading ? "Writing" : "Generate") {
                     Task { await refreshBrief(force: true) }
                 }
                 .buttonStyle(.bordered)
@@ -265,24 +308,16 @@ struct ContentView: View {
 
     private var healthBody: String {
         if session.dayOffset > 0 {
-            return "Tomorrow's goal is written from today's distance, strain, and speed."
+            return "Tomorrow's distance and strain, from today and the week."
         }
-        let today = session.todayTotals
-        let week = session.weekTotals
-        let who = session.profile.name
-        let todayLine = "\(dayTitle) \(who) has \(session.unit.text(meters: today.distance)), \(duration(today.resting)) resting, and \(duration(today.moving)) moving. Strain \(String(format: "%.1f", session.strain.strain))."
-        let weekLine = "This week he has \(session.unit.text(meters: week.distance)), \(duration(week.resting)) resting, and \(duration(week.moving)) moving."
-        let left = max(0, DayBrief.minimumMiles - today.distance / DistanceUnit.metersPerMile)
-        if left < 0.05 {
-            return "\(todayLine) The 3 miles are covered. \(weekLine)"
-        }
-        return "\(todayLine) He still needs \(String(format: "%.2f", left)) mi, in short outings. \(weekLine)"
+        return "Today's distance and strain, from yesterday and the week."
     }
 
     private func refreshBrief(force: Bool) async {
         let day = DayBriefCache.dayString(for: session.anchorDate)
         let kind: DayBrief.Kind = session.dayOffset > 0 ? .forecast : .record
-        if !force, let cached = DayBriefCache.load(day: day, kind: kind.rawValue) {
+        let cacheKind = kind.rawValue + "-goal"
+        if !force, let cached = DayBriefCache.load(day: day, kind: cacheKind) {
             brief = cached
             briefNote = ""
             return
@@ -297,14 +332,16 @@ struct ContentView: View {
             let note = try await DayBriefClient.fetch(
                 profile: session.profile,
                 today: source.day,
+                yesterday: source.yesterday,
                 week: source.week,
                 dayLabel: kind == .forecast ? "Today" : dayTitle,
                 kind: kind,
                 strain: source.strain.strain,
+                yesterdayStrain: source.yesterdayStrain.strain,
                 averageSpeed: speed
             )
             brief = note
-            DayBriefCache.save(note, day: day, kind: kind.rawValue)
+            DayBriefCache.save(note, day: day, kind: cacheKind)
         } catch DayBriefError.missingKey {
             briefNote = "This note needs an OpenRouter key on this phone."
         } catch DayBriefError.requestFailed(let status) {
@@ -314,12 +351,53 @@ struct ContentView: View {
         }
     }
 
+    private func playOpeningGaugeIfNeeded() {
+        let now = Date()
+        guard now.timeIntervalSince(OpeningGauge.last) > 3 else { return }
+        OpeningGauge.last = now
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 450_000_000)
+            guard !Task.isCancelled else { return }
+            await playGaugeSweep()
+        }
+    }
+
+    private func playGaugeSweep() async {
+        sweepToken += 1
+        let token = sweepToken
+        gaugeSweep = GaugeSweep(
+            started: Date(),
+            originSleep: sleepProgress,
+            originMovement: movementProgress,
+            originStrain: strainProgress,
+            settling: false
+        )
+        try? await Task.sleep(nanoseconds: UInt64(GaugeSweep.fill * 1_000_000_000) + UInt64(GaugeSweep.stagger * 2 * 1_000_000_000))
+        guard token == sweepToken else { return }
+        guard !Task.isCancelled else {
+            gaugeSweep = nil
+            return
+        }
+        gaugeSweep = GaugeSweep(
+            started: Date(),
+            originSleep: sleepProgress,
+            originMovement: movementProgress,
+            originStrain: strainProgress,
+            settling: true
+        )
+        try? await Task.sleep(nanoseconds: UInt64(GaugeSweep.settle * 1_000_000_000) + UInt64(GaugeSweep.stagger * 2 * 1_000_000_000))
+        guard token == sweepToken else { return }
+        gaugeSweep = nil
+    }
+
     private var sleepProgress: Double {
         min(1, Double(session.todayTotals.resting) / Double(Bulldog.dailyRestingSeconds))
     }
 
     private var movementProgress: Double {
-        min(1, Double(session.todayTotals.moving) / Double(Bulldog.dailyMovingSeconds))
+        let goal = DayBrief.minimumMiles * DistanceUnit.metersPerMile
+        guard goal > 0 else { return 0 }
+        return min(1, session.todayTotals.distance / goal)
     }
 
     private var strainProgress: Double {
@@ -359,7 +437,7 @@ struct ContentView: View {
                         .monospacedDigit()
                 }
             }
-            DayMovementChart(parts: session.dayParts)
+            DayMovementChart(parts: session.dayParts, revealToken: chartReveal)
         }
     }
 
@@ -370,23 +448,55 @@ struct ContentView: View {
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(session.rows) { row in
-                    HStack {
-                        Text(row.label)
-                        Spacer()
-                        Text(session.unit.text(meters: row.totals.distance))
-                            .monospacedDigit()
-                        Text(rowDetail(row.totals))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text(row.label)
+                                .military(13, bold: true)
+                                .lineLimit(1)
+                            Spacer(minLength: 8)
+                            Text(session.unit.text(meters: row.totals.distance))
+                                .military(13)
+                                .monospacedDigit()
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                        }
+                        if !rowDetail(row.totals).isEmpty {
+                            Text(rowDetail(row.totals))
+                                .military(12)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                        }
                     }
                 }
             }
         }
     }
 
+    @ViewBuilder
+    private var restingMark: some View {
+        if session.motion != .moving {
+            Button {
+                showChat = true
+            } label: {
+                Text("🦴")
+                    .font(.system(size: 22))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Resting. Ask about Max.")
+        }
+    }
+
+    @ViewBuilder
+    private var movingMark: some View {
+        if session.motion == .moving {
+            SpinningTennisBall()
+        }
+    }
+
     private var controlBar: some View {
-        HStack(spacing: 12) {
-            connectionButton
+        HStack {
+            Spacer()
             buzzButton
         }
         .padding(.horizontal, 20)
@@ -394,16 +504,38 @@ struct ContentView: View {
         .padding(.bottom, 4)
     }
 
+    private var exportButton: some View {
+        Button {
+            guard let url = DiaryPDF.write(
+                profile: session.profile,
+                dayTitle: dayTitle,
+                today: session.todayTotals,
+                week: session.weekTotals,
+                strain: session.strain.strain,
+                unit: session.unit,
+                rows: session.rows,
+                photo: DogPhotoStore.load()
+            ) else { return }
+            shareFile = ShareFile(url: url)
+        } label: {
+            Label("Export", systemImage: "square.and.arrow.up")
+        }
+        .buttonStyle(.bordered)
+        .military(17, bold: true)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityHint("Share a PDF of this diary")
+    }
+
     private var connectionButton: some View {
         Button(connectionTitle) {
-            if session.connected || session.busy {
+            if session.keepingLink {
                 session.disconnect()
             } else {
                 session.connect()
             }
         }
         .vvControlGlass(prominent: false)
-        .disabled(session.busy && !session.connected)
+        .disabled(session.busy && !session.keepingLink)
     }
 
     private var buzzButton: some View {
@@ -417,8 +549,8 @@ struct ContentView: View {
     }
 
     private var connectionTitle: String {
-        if session.busy { return "Connecting" }
-        return session.connected ? "Disconnect" : "Connect"
+        if session.busy && !session.keepingLink { return "Connecting" }
+        return session.keepingLink ? "Disconnect" : "Connect"
     }
 
     private var settingsButton: some View {
@@ -483,6 +615,22 @@ struct ContentView: View {
         if totals.moving > 0 { parts.append("\(duration(totals.moving)) moving") }
         if totals.resting > 0 { parts.append("\(duration(totals.resting)) resting") }
         return parts.joined(separator: " · ")
+    }
+}
+
+private struct SpinningTennisBall: View {
+    @State private var angle = 0.0
+
+    var body: some View {
+        Text("🎾")
+            .font(.system(size: 22))
+            .rotationEffect(.degrees(angle))
+            .onAppear {
+                withAnimation(.linear(duration: 0.8).repeatForever(autoreverses: false)) {
+                    angle = 360
+                }
+            }
+            .accessibilityLabel("Moving")
     }
 }
 
@@ -646,7 +794,7 @@ private struct CalibrationSheet: View {
     }
 }
 
-private extension View {
+extension View {
     @ViewBuilder
     func vvControlGlass(prominent: Bool) -> some View {
         if #available(iOS 26, macOS 26, *) {

@@ -45,13 +45,13 @@ public enum DayBrief {
         case .record:
             return """
             Reply with JSON only, no markdown: {"summary":"","dinnerName":"","ingredients":[],"steps":[]}.
-            Summary is two sentences about this dog's day against the 3 mile minimum. Use only the numbers given, including the strain number. If miles are still left, say how many and that they fit better as short outings. Do not invent sleep stages or a recovery score.
+            Summary is one short sentence: today's distance target and strain target. Decide both from yesterday and the week. A hard yesterday can mean less today. Stay near the 3 mile minimum unless yesterday or the week was already hard. Strain is 0 to 21, and about 30 easy minutes is near 10. Do not describe the dog. Do not recap the day. Do not invent sleep stages or a recovery score.
             \(dinner)
             """
         case .forecast:
             return """
             Reply with JSON only, no markdown: {"summary":"","dinnerName":"","ingredients":[],"steps":[]}.
-            Summary is tomorrow's exercise goal in two sentences: how far to go, split into short outings, using the distance, strain, and speed given. A harder day can mean a shorter tomorrow. Do not invent sleep stages or a recovery score.
+            Summary is one short sentence: tomorrow's distance target and strain target, from the day and the week given. A harder day can mean a shorter tomorrow. Do not describe the dog. Do not invent sleep stages or a recovery score.
             \(dinner)
             """
         }
@@ -60,15 +60,17 @@ public enum DayBrief {
     public static func userPrompt(
         profile: DogProfile,
         today: PeriodTotals,
+        yesterday: PeriodTotals,
         week: PeriodTotals,
         dayLabel: String,
         kind: Kind,
         strain: Double,
+        yesterdayStrain: Double,
         averageSpeed: String
     ) -> String {
         let focus = kind == .forecast
-            ? "Write tomorrow's exercise goal from this day."
-            : "Write the note for this day."
+            ? "Summary: one short sentence with tomorrow's distance and strain."
+            : "Summary: one short sentence with today's distance target and strain target, from yesterday and the week. Do not summarize the dog."
         return """
         Dog: \(profile.name), \(Bulldog.sex.lowercased()) \(profile.breed), \(profile.weightPounds) lb, \(profile.ageYears) years old, \(activity).
         Minimum movement: \(DistanceUnit.miles.text(meters: minimumMiles * DistanceUnit.metersPerMile)) a day.
@@ -76,6 +78,8 @@ public enum DayBrief {
         That day: \(line(today)).
         Strain: \(String(format: "%.1f", strain)) of 21.
         Average moving speed: \(averageSpeed).
+        Yesterday: \(line(yesterday)).
+        Yesterday strain: \(String(format: "%.1f", yesterdayStrain)) of 21.
         Week: \(line(week)).
         Pantry: \(pantry.joined(separator: ", ")).
         \(focus)

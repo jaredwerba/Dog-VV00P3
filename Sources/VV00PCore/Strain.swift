@@ -38,7 +38,7 @@ public enum StrainModel {
     public static let loadScale = 5_570.0
     public static let startLoad = 8.0
 
-    public static func score(_ seconds: [StoredSecond]) -> StrainScore {
+    public static func score(_ seconds: [StoredSecond], strideMeters: Double? = nil) -> StrainScore {
         var load = 0.0
         var movingTime = 0
         var movingDistance = 0.0
@@ -52,7 +52,12 @@ public enum StrainModel {
                 }
                 let peaks = max(0, second.peaks)
                 load += 1 + Double(peaks * peaks)
-                let speed = max(0, second.distance)
+                let speed: Double
+                if let strideMeters, strideMeters > 0 {
+                    speed = Double(peaks) * strideMeters
+                } else {
+                    speed = max(0, second.distance)
+                }
                 movingTime += 1
                 movingDistance += speed
                 peakSpeed = max(peakSpeed, speed)

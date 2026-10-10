@@ -14,6 +14,8 @@ final class StrapSession: ObservableObject {
     @Published var motionNote = ""
     @Published var busy = false
     @Published var connected = false
+    /// True after this phone has a remembered strap, including while it is reconnecting.
+    @Published var keepingLink = false
     @Published var metersPerPeak = Bulldog.metersPerPeak
     @Published var unit: DistanceUnit = .meters
     @Published var range: HistoryRange = .day
@@ -47,11 +49,18 @@ final class StrapSession: ObservableObject {
     private var sawIMU = false
     private var connectGeneration = 0
     private var lastSampleTime: TimeInterval = 0
+    private var lastIMUWall: TimeInterval = 0
+    private var pullInFlight = false
+    private var pullWaiters: [CheckedContinuation<Void, Never>] = []
     private var movingBout = MovingBout()
     private var lastObservedPeaks = 0
+    private var linkPrepared = false
+    private var holdTask: Task<Void, Never>?
     private let defaults = UserDefaults.standard
 
-    init() {
+    static let shared = StrapSession()
+
+    private init() {
         let opened = Self.openStore()
         store = opened.store
         motionNote = opened.note ?? ""
@@ -68,6 +77,11 @@ final class StrapSession: ObservableObject {
         profile = DogProfileStore.load(defaults: defaults)
         model.config = currentConfig()
         reloadHistory()
+        if rememberedDevice() != nil {
+            keepingLink = true
+            deviceName = defaults.string(forKey: Keys.strapName) ?? "WHOOP"
+            status = "Reconnecting"
+        }
     }
 
     var anchorDate: Date {
@@ -88,13 +102,24 @@ final class StrapSession: ObservableObject {
     }
 
     /// Tomorrow's note is a prediction from the real today. Other days use themselves.
-    func noteSource() -> (day: PeriodTotals, week: PeriodTotals, strain: StrainScore) {
-        guard dayOffset > 0 else { return (todayTotals, weekTotals, strain) }
-        let today = Date()
+    func noteSource() -> (
+        day: PeriodTotals,
+        yesterday: PeriodTotals,
+        week: PeriodTotals,
+        strain: StrainScore,
+        yesterdayStrain: StrainScore
+    ) {
+        let dayDate = dayOffset > 0 ? Date() : anchorDate
+        let previous = Calendar.current.date(byAdding: .day, value: -1, to: dayDate) ?? dayDate
+        let dayTotals = dayOffset > 0 ? totals(for: .day, containing: dayDate) : todayTotals
+        let dayStrain = dayOffset > 0 ? strain(on: dayDate) : strain
+        let weekForNote = dayOffset > 0 ? totals(for: .week, containing: dayDate) : weekTotals
         return (
-            totals(for: .day, containing: today),
-            totals(for: .week, containing: today),
-            strain(on: today)
+            dayTotals,
+            totals(for: .day, containing: previous),
+            weekForNote,
+            dayStrain,
+            strain(on: previous)
         )
     }
 
@@ -102,7 +127,7 @@ final class StrapSession: ObservableObject {
         let bounds = HistoryRange.day.bounds(containing: date)
         let from = Int(bounds.start.timeIntervalSince1970.rounded(.down))
         let until = Int(bounds.end.timeIntervalSince1970.rounded(.down))
-        return (try? store.timeline(from: from, until: until)).map(StrainModel.score) ?? .quiet
+        return (try? store.timeline(from: from, until: until)).map { StrainModel.score($0, strideMeters: metersPerPeak) } ?? .quiet
     }
 
     func setRange(_ range: HistoryRange) {
@@ -175,6 +200,69 @@ final class StrapSession: ObservableObject {
         publishPeriod()
     }
 
+    /// Open Bluetooth before the app finishes launching, then take back the remembered strap.
+    /// A force-quit still needs this process to start again. Locking the phone does not.
+    func restoreLink() {
+        guard !ProcessInfo.processInfo.arguments.contains("--screenshot") else { return }
+        guard !linkPrepared else { return }
+        linkPrepared = true
+        startListenersIfNeeded()
+        client.onLinkReady = { [weak self] _ in
+            Task { @MainActor in
+                self?.finishHolding()
+            }
+        }
+        client.onLinkDropped = { [weak self] in
+            Task { @MainActor in
+                self?.noteDrop()
+            }
+        }
+        client.prepareForRestoration()
+        guard let device = rememberedDevice() else { return }
+        keepingLink = true
+        deviceName = device.name ?? deviceName
+        switch client.state {
+        case .ready, .streaming:
+            finishHolding()
+        case .connecting, .discoveringServices, .subscribing:
+            status = "Reconnecting"
+        case .idle, .scanning:
+            resume(device)
+        }
+    }
+
+    /// If the remembered strap is down, ask for it again.
+    func reassertLink() {
+        guard keepingLink, !connected, !busy else { return }
+        guard let device = rememberedDevice() else { return }
+        switch client.state {
+        case .connecting, .discoveringServices, .subscribing, .ready, .streaming:
+            return
+        case .idle, .scanning:
+            resume(device)
+        }
+    }
+
+    /// Connect if the strap is down, then ask it for stored motion.
+    func syncFromStrap() async {
+        guard !ProcessInfo.processInfo.arguments.contains("--screenshot") else {
+            reloadHistory()
+            return
+        }
+        let alreadyUp = connected
+        if !alreadyUp {
+            await ensureConnected()
+        }
+        guard connected else {
+            reloadHistory()
+            if rememberedDevice() != nil {
+                motionNote = "Bring the strap close, then pull again."
+            }
+            return
+        }
+        await pullStoredMotion()
+    }
+
     func connect() {
         guard !busy else { return }
         flushHistory()
@@ -197,6 +285,20 @@ final class StrapSession: ObservableObject {
         connectGeneration += 1
         let generation = connectGeneration
         startListenersIfNeeded()
+        if !linkPrepared {
+            linkPrepared = true
+            client.onLinkReady = { [weak self] _ in
+                Task { @MainActor in
+                    self?.finishHolding()
+                }
+            }
+            client.onLinkDropped = { [weak self] in
+                Task { @MainActor in
+                    self?.noteDrop()
+                }
+            }
+            client.prepareForRestoration()
+        }
         Task {
             let found = await client.discover()
             guard generation == connectGeneration else { return }
@@ -206,7 +308,9 @@ final class StrapSession: ObservableObject {
                 busy = false
                 return
             }
+            remember(found)
             deviceName = found.name ?? "WHOOP"
+            keepingLink = true
             status = "Connecting"
             do {
                 try await client.connect(to: found)
@@ -214,24 +318,11 @@ final class StrapSession: ObservableObject {
                     client.disconnect()
                     return
                 }
-                try await client.startImuStreaming()
-                guard generation == connectGeneration else {
-                    client.disconnect()
-                    return
-                }
-                // Do not acknowledge the historical chunk. An ack can make the strap drop it.
-                try await client.requestStoredMotion()
-                guard generation == connectGeneration else {
-                    client.disconnect()
-                    return
-                }
-                connected = true
-                status = "Connected"
-                busy = false
-                armMissingSampleNote()
+                finishHolding()
             } catch {
-                status = "Connection failed"
-                motionNote = error.localizedDescription
+                guard generation == connectGeneration else { return }
+                status = "Reconnecting"
+                motionNote = "Bring the strap close. It will connect when it is in range."
                 busy = false
                 connected = false
             }
@@ -240,6 +331,10 @@ final class StrapSession: ObservableObject {
 
     func disconnect() {
         connectGeneration += 1
+        holdTask?.cancel()
+        keepingLink = false
+        defaults.removeObject(forKey: Keys.strapId)
+        defaults.removeObject(forKey: Keys.strapName)
         missingTask?.cancel()
         flushHistory()
         client.disconnect()
@@ -264,6 +359,154 @@ final class StrapSession: ObservableObject {
         reloadHistory()
     }
 
+    private func resume(_ device: WhoopDevice) {
+        busy = true
+        status = "Reconnecting"
+        connectGeneration += 1
+        let generation = connectGeneration
+        Task {
+            do {
+                try await client.connect(to: device)
+                guard generation == connectGeneration else { return }
+                finishHolding()
+            } catch {
+                guard generation == connectGeneration else { return }
+                if let found = await client.discover(), generation == connectGeneration {
+                    remember(found)
+                    deviceName = found.name ?? deviceName
+                    do {
+                        try await client.connect(to: found)
+                        guard generation == connectGeneration else { return }
+                        finishHolding()
+                        return
+                    } catch {
+                        guard generation == connectGeneration else { return }
+                    }
+                }
+                status = "Reconnecting"
+                motionNote = "Bring the strap close. It will connect when it is in range."
+                busy = false
+                connected = false
+            }
+        }
+    }
+
+    private func finishHolding() {
+        let generation = connectGeneration
+        holdTask?.cancel()
+        holdTask = Task {
+            do {
+                try await client.startImuStreaming()
+                guard generation == connectGeneration else { return }
+                connected = true
+                keepingLink = true
+                status = "Connected"
+                busy = false
+                if motionNote == "Bring the strap close. It will connect when it is in range." {
+                    motionNote = ""
+                }
+                armMissingSampleNote()
+                await pullStoredMotion()
+            } catch {
+                guard generation == connectGeneration else { return }
+                connected = false
+                status = keepingLink ? "Reconnecting" : "Connection failed"
+                busy = false
+            }
+        }
+    }
+
+    private func ensureConnected() async {
+        guard let device = rememberedDevice() else { return }
+        keepingLink = true
+        deviceName = device.name ?? deviceName
+        switch client.state {
+        case .idle, .scanning:
+            resume(device)
+        case .connecting, .discoveringServices, .subscribing, .ready, .streaming:
+            status = connected ? status : "Reconnecting"
+        }
+        await waitUntilConnected(seconds: 15)
+    }
+
+    private func waitUntilConnected(seconds: Double) async {
+        let steps = Int(seconds / 0.25)
+        for _ in 0..<steps {
+            if connected { return }
+            try? await Task.sleep(nanoseconds: 250_000_000)
+        }
+    }
+
+    /// Ask the strap for stored motion and wait until that burst settles.
+    /// The historical chunk is not acknowledged, so the strap keeps the records.
+    private func pullStoredMotion() async {
+        if pullInFlight {
+            await withCheckedContinuation { pullWaiters.append($0) }
+            return
+        }
+        pullInFlight = true
+        await performPull()
+        pullInFlight = false
+        let waiters = pullWaiters
+        pullWaiters = []
+        waiters.forEach { $0.resume() }
+    }
+
+    private func performPull() async {
+        motionNote = "Loading stored motion."
+        let mark = Date().timeIntervalSince1970
+        do {
+            try await client.requestStoredMotion()
+        } catch {
+            motionNote = "Could not load stored motion."
+            reloadHistory()
+            return
+        }
+        await waitForMotionBurst(since: mark)
+        flushHistory()
+        reloadHistory()
+        if motionNote == "Loading stored motion." {
+            motionNote = ""
+        }
+    }
+
+    private func waitForMotionBurst(since mark: TimeInterval) async {
+        let start = Date()
+        while Date().timeIntervalSince(start) < 20 {
+            try? await Task.sleep(nanoseconds: 200_000_000)
+            if lastIMUWall >= mark, Date().timeIntervalSince1970 - lastIMUWall > 1 {
+                return
+            }
+            if lastIMUWall < mark, Date().timeIntervalSince(start) > 4 {
+                return
+            }
+        }
+    }
+
+    private func noteDrop() {
+        guard keepingLink else { return }
+        connected = false
+        busy = false
+        status = "Reconnecting"
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 400_000_000)
+            self.reassertLink()
+        }
+    }
+
+    private func rememberedDevice() -> WhoopDevice? {
+        guard let idString = defaults.string(forKey: Keys.strapId),
+              let id = UUID(uuidString: idString) else { return nil }
+        return WhoopDevice(id: id, name: defaults.string(forKey: Keys.strapName))
+    }
+
+    private func remember(_ device: WhoopDevice) {
+        defaults.set(device.id.uuidString, forKey: Keys.strapId)
+        if let name = device.name, !name.isEmpty {
+            defaults.set(name, forKey: Keys.strapName)
+        }
+    }
+
     func flushHistory() {
         guard let open = closer.flush() else { return }
         do {
@@ -275,6 +518,7 @@ final class StrapSession: ObservableObject {
     }
 
     func reloadHistory() {
+        correctKnownWalk()
         let anchor = anchorDate
         let bounds = range.bounds(containing: anchor)
         let from = Int(bounds.start.timeIntervalSince1970.rounded(.down))
@@ -285,7 +529,7 @@ final class StrapSession: ObservableObject {
         let dayBounds = HistoryRange.day.bounds(containing: anchor)
         let dayFrom = Int(dayBounds.start.timeIntervalSince1970.rounded(.down))
         let dayUntil = Int(dayBounds.end.timeIntervalSince1970.rounded(.down))
-        strain = (try? store.timeline(from: dayFrom, until: dayUntil)).map(StrainModel.score) ?? .quiet
+        strain = (try? store.timeline(from: dayFrom, until: dayUntil)).map { StrainModel.score($0, strideMeters: metersPerPeak) } ?? .quiet
         rows = (try? store.rows(range: range, containing: anchor)) ?? []
         if range == .day {
             chartDays = []
@@ -347,6 +591,7 @@ final class StrapSession: ObservableObject {
 
     private func receiveIMU(_ sample: WhoopImuSample) {
         sawIMU = true
+        lastIMUWall = Date().timeIntervalSince1970
         if motionNote != "Could not save history." {
             motionNote = ""
         }
@@ -439,6 +684,22 @@ final class StrapSession: ObservableObject {
         period = totals
     }
 
+    /// The 2 mile walk on 7 Oct 2026 was saved as about 202 m. Raise that day to 2 miles.
+    /// Later saves on that day keep the larger distance, so a history pull cannot shrink it.
+    private func correctKnownWalk() {
+        var calendar = Calendar.current
+        guard let day = calendar.date(from: DateComponents(year: 2026, month: 10, day: 7)) else { return }
+        let start = calendar.startOfDay(for: day)
+        guard let end = calendar.date(byAdding: .day, value: 1, to: start) else { return }
+        let from = Int(start.timeIntervalSince1970.rounded(.down))
+        let until = Int(end.timeIntervalSince1970.rounded(.down))
+        let target = 2 * DistanceUnit.metersPerMile
+        _ = try? store.raiseDistance(from: from, until: until, toMeters: target)
+        if let current = try? store.totals(from: from, until: until), current.distance > 1 {
+            store.protectedRange = from..<until
+        }
+    }
+
     private static func openStore() -> (store: HistoryStore, note: String?) {
         let path = historyPath()
         if let store = try? HistoryStore(path: path) {
@@ -459,5 +720,7 @@ final class StrapSession: ObservableObject {
     private enum Keys {
         static let meters = "vv00p.metersPerPeak"
         static let unit = "vv00p.distanceUnit"
+        static let strapId = "vv00p.strapId"
+        static let strapName = "vv00p.strapName"
     }
 }
